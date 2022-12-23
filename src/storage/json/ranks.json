@@ -1,0 +1,32 @@
+[
+	{
+		"name": "WOOD",
+		"range": { "min": null, "max": 499 },
+		"image": "./wood.png",
+		"emoji": "<:wood:1055916122240725022>"
+	},
+	{
+		"name": "BRONZE",
+		"range": { "min": 500, "max": 1499 },
+		"image": "./bronze.png",
+		"emoji": "<:bronze:1055890323441733702>"
+	},
+	{
+		"name": "SILVER",
+		"range": { "min": 1500, "max": 2999 },
+		"image": "./silver.png",
+		"emoji": "<:silver:1055890328877547530>"
+	},
+	{
+		"name": "GOLD",
+		"range": { "min": 3000, "max": 4999 },
+		"image": "./gold.png",
+		"emoji": "<:gold:1055890327002697808>"
+	},
+	{
+		"name": "DIAMOND",
+		"range": { "min": 5000, "max": null },
+		"image": "./diamond.png",
+		"emoji": "<:diamond:1055890523312898178>"
+	}
+]

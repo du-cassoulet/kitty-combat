@@ -1,0 +1,20 @@
+[
+	{
+		"name": "UNKNOWN_EGG",
+		"id": "unknown_egg",
+		"description": "RANDOM_EGG",
+		"image": "./unknown.png",
+		"price": 7500,
+		"rarities": [75, 25, 0],
+		"openTime": 10000
+	},
+	{
+		"name": "OMINOUS_EGG",
+		"id": "ominous_egg",
+		"description": "GET_RARE_CATS",
+		"image": "./ominous.png",
+		"price": 15000,
+		"rarities": [30, 65, 5],
+		"openTime": 60000
+	}
+]

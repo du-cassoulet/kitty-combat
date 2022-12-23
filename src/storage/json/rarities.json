@@ -1,0 +1,17 @@
+[
+	{
+		"name": "COMMON",
+		"emoji": "<:common:1054153982622306524>",
+		"color": "#47d66d"
+	},
+	{
+		"name": "RARE",
+		"emoji": "<:rare:1054154033859936418>",
+		"color": "#a13ce8"
+	},
+	{
+		"name": "LEGENDARY",
+		"emoji": "<:legendary:1054153981607301291>",
+		"color": "#e0a73d"
+	}
+]
