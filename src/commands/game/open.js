@@ -30,7 +30,7 @@ module.exports = new Command({
 	category: Command.Categories.Game,
 	autocomplete: async function (slash, translate) {
 		const query = slash.options.getFocused();
-		const data = await getUser(slash.user.id);
+		const data = await getUser(slash.user);
 		if (!data) return slash.respond([]);
 
 		const userEggs = data.inv.eggs.map((id) =>
@@ -47,7 +47,7 @@ module.exports = new Command({
 		);
 	},
 	execute: async function (slash, translate) {
-		const data = await getUser(slash.user.id);
+		const data = await getUser(slash.user);
 		const userEggIDs = data.inv.eggs;
 		const eggId = slash.options.getString("egg");
 

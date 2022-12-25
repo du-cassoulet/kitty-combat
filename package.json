@@ -6,7 +6,7 @@
 	"dependencies": {
 		"@extreme_hero/deeptype": "^1.0.1",
 		"better-sqlite3": "^8.0.1",
-		"canvas": "^2.11.0",
+		"canvas": "2.10.2",
 		"discord.js": "^14.7.1",
 		"dotenv": "^16.0.3",
 		"elo-rank": "^1.0.4",

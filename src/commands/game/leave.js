@@ -3,8 +3,8 @@ const Discord = require("discord.js");
 
 module.exports = new Command({
 	options: {
-		name: "STOP",
-		description: "STOP_DESCRIPTION",
+		name: "LEAVE_COMMAND",
+		description: "LEAVE_DESCRIPTION",
 		type: [Discord.ApplicationCommandType.ChatInput],
 	},
 	category: Command.Categories.Game,
@@ -38,7 +38,12 @@ module.exports = new Command({
 
 		const game = client.games.get(inGame);
 		const botMessage = await slash.reply({
-			content: "<:kittypaw:1054419983075115028> " + translate("WANT_STOP"),
+			content:
+				"<:kittypaw:1054419983075115028> " +
+				translate("WANT_STOP") +
+				(game.starting
+					? ""
+					: "\n<:Reply:893527626201841744> " + translate("RECIEVE_DEFEAT")),
 			components: components(false),
 			ephemeral: true,
 		});

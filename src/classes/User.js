@@ -30,7 +30,7 @@ class Cat {
 	 * @returns {Cat}
 	 */
 	setName(name) {
-		this.name = name;
+		this.name = name ?? this.name;
 		return this;
 	}
 
@@ -39,7 +39,7 @@ class Cat {
 	 * @returns {Cat}
 	 */
 	setCatId(catId) {
-		this.catId = catId;
+		this.catId = catId ?? this.catId;
 		return this;
 	}
 
@@ -68,12 +68,25 @@ class Cat {
 	 * @returns {Cat}
 	 */
 	setSouls(souls) {
-		this.souls = souls;
+		this.souls = souls ?? this.souls;
 		return this;
 	}
 }
 
 class Inventory {
+	/**
+	 * @param {Inventory} data
+	 * @returns {Inventory}
+	 */
+	static form(data) {
+		return new Inventory()
+			.setCoins(data.coins)
+			.setCats(data.cats)
+			.setEggs(data.eggs)
+			.setEggsOpened(data.eggsOpened)
+			.setSelectedCat(data.selectedCat);
+	}
+
 	constructor() {
 		this.coins = { current: 0, highest: 0 };
 		this.eggsOpened = 0;
@@ -93,7 +106,7 @@ class Inventory {
 	 */
 	setCoins(current, highest) {
 		this.coins = current
-			? { current, highest: highest || current }
+			? { current, highest: highest ?? current }
 			: this.coins;
 
 		return this;
@@ -104,7 +117,7 @@ class Inventory {
 	 * @returns {Inventory}
 	 */
 	setEggsOpened(eggsOpened) {
-		this.eggsOpened = eggsOpened || this.eggsOpened;
+		this.eggsOpened = eggsOpened ?? this.eggsOpened;
 		return this;
 	}
 
@@ -113,7 +126,7 @@ class Inventory {
 	 * @returns {Inventory}
 	 */
 	setEggs(eggs) {
-		this.eggs = eggs || this.eggs;
+		this.eggs = eggs ?? this.eggs;
 		return this;
 	}
 
@@ -122,7 +135,7 @@ class Inventory {
 	 * @returns {Inventory}
 	 */
 	setCats(cats) {
-		this.cats = cats || this.cats;
+		this.cats = cats ?? this.cats;
 		return this;
 	}
 
@@ -131,18 +144,39 @@ class Inventory {
 	 * @returns {Inventory}
 	 */
 	setSelectedCat(selectedCat) {
-		this.selectedCat = selectedCat || this.selectedCat;
+		this.selectedCat = selectedCat ?? this.selectedCat;
 		return this;
 	}
 }
 
 class Stats {
+	static Progressions = {
+		Down: 0,
+		Static: 1,
+		Up: 2,
+	};
+
+	/**
+	 * @param {Stats} data
+	 * @returns {Stats}
+	 */
+	static form(data) {
+		return new Stats()
+			.setWins(data.wins)
+			.setLosses(data.losses)
+			.setWinstreak(data.winstreak.current, data.winstreak.highest)
+			.setTime(data.time)
+			.setRank(data.rank)
+			.setProg(data.prog);
+	}
+
 	constructor() {
 		this.winstreak = { current: 0, highest: 0 };
 		this.wins = 0;
 		this.losses = 0;
 		this.rank = 0;
 		this.time = 0;
+		this.prog = Stats.Progressions.Static;
 	}
 
 	/**
@@ -150,9 +184,10 @@ class Stats {
 	 * @returns {Stats}
 	 */
 	setWinstreak(current, highest) {
-		this.winstreak = current
-			? { current, highest: highest || current }
-			: this.winstreak;
+		this.winstreak =
+			current !== undefined
+				? { current, highest: highest ?? current }
+				: this.winstreak;
 
 		return this;
 	}
@@ -162,7 +197,7 @@ class Stats {
 	 * @returns {Stats}
 	 */
 	setWins(wins) {
-		this.wins = wins || this.wins;
+		this.wins = wins ?? this.wins;
 		return this;
 	}
 
@@ -171,7 +206,7 @@ class Stats {
 	 * @returns {Stats}
 	 */
 	setLosses(losses) {
-		this.losses = losses || this.losses;
+		this.losses = losses ?? this.losses;
 		return this;
 	}
 
@@ -180,7 +215,12 @@ class Stats {
 	 * @returns {Stats}
 	 */
 	setRank(rank) {
-		this.rank = rank;
+		this.rank = rank ?? this.rank;
+		return this;
+	}
+
+	setProg(prog) {
+		this.prog = prog ?? this.prog;
 		return this;
 	}
 
@@ -189,13 +229,22 @@ class Stats {
 	 * @returns {Stats}
 	 */
 	setTime(time) {
-		this.time = time;
+		this.time = time ?? this.time;
 		return this;
 	}
 }
 
 class Leveling {
 	static Range = 500;
+
+	/**
+	 *
+	 * @param {Leveling} data
+	 * @returns {Leveling}
+	 */
+	static form(data) {
+		return new Leveling().setXp(data.xp).setLevel(data.level);
+	}
 
 	constructor() {
 		this.xp = 0;
@@ -207,7 +256,7 @@ class Leveling {
 	 * @returns {Leveling}
 	 */
 	setXp(xp) {
-		this.xp = xp || this.xp;
+		this.xp = xp ?? this.xp;
 		return this;
 	}
 
@@ -216,7 +265,7 @@ class Leveling {
 	 * @returns {Leveling}
 	 */
 	setLevel(level) {
-		this.level = level || this.level;
+		this.level = level ?? this.level;
 		return this;
 	}
 }
@@ -239,9 +288,9 @@ class User {
 			.setAvatarURL(data.avatarURL)
 			.setJoinedAt(data.joinedAt)
 			.setElo(data.elo)
-			.setInv(data.inv)
-			.setStats(data.stats)
-			.setLeveling(data.leveling);
+			.setInv(Inventory.form(data.inv))
+			.setStats(Stats.form(data.stats))
+			.setLeveling(Leveling.form(data.leveling));
 	}
 
 	constructor() {
@@ -263,7 +312,7 @@ class User {
 	 * @returns {User}
 	 */
 	setTag(tag) {
-		this.tag = tag || this.tag;
+		this.tag = tag ?? this.tag;
 		return this;
 	}
 
@@ -272,7 +321,7 @@ class User {
 	 * @returns {User}
 	 */
 	setAvatarURL(avatarURL) {
-		this.avatarURL = avatarURL || this.avatarURL;
+		this.avatarURL = avatarURL ?? this.avatarURL;
 		return this;
 	}
 
@@ -284,7 +333,7 @@ class User {
 		if (date instanceof Date) {
 			this.joinedAt = date.getTime();
 		} else {
-			this.joinedAt = date || this.joinedAt;
+			this.joinedAt = date ?? this.joinedAt;
 		}
 
 		return this;
@@ -295,7 +344,7 @@ class User {
 	 * @returns {User}
 	 */
 	setElo(elo) {
-		this.elo = elo || this.elo;
+		this.elo = elo ?? this.elo;
 		return this;
 	}
 
@@ -304,7 +353,7 @@ class User {
 	 * @returns {User}
 	 */
 	setInv(inv) {
-		this.inv = inv || this.inv;
+		this.inv = inv ?? this.inv;
 		return this;
 	}
 
@@ -313,7 +362,7 @@ class User {
 	 * @returns {User}
 	 */
 	setStats(stats) {
-		this.stats = stats || this.stats;
+		this.stats = stats ?? this.stats;
 		return this;
 	}
 
@@ -322,7 +371,7 @@ class User {
 	 * @returns {User}
 	 */
 	setLeveling(leveling) {
-		this.leveling = leveling || this.leveling;
+		this.leveling = leveling ?? this.leveling;
 		return this;
 	}
 }

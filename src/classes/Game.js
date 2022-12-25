@@ -99,7 +99,7 @@ class Game {
 		client.inGame.set(player.id, this.hostId);
 		this.players.set(player.id, {
 			user: player,
-			data: await getUser(player.id),
+			data: await getUser(player),
 			game: new GameUser(),
 		});
 

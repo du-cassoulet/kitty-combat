@@ -21,7 +21,6 @@ const files = fs.readdirSync(_path).filter((f) => f !== baseFile);
 			.map((i) => ({ key: i[0], value: i[1] }));
 
 		if (!object.length) continue;
-
 		for (let i in object) {
 			try {
 				const result = await translate(object[i].value, code).catch(

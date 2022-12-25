@@ -39,7 +39,7 @@ module.exports = new Command({
 	execute: async function (slash, translate) {
 		/** @type {Discord.User} */
 		const user = slash.options?.getUser("user") || slash.target || slash.user;
-		const data = await getUser(user.id);
+		const data = await getUser(user);
 		const rank = getRank(data.elo);
 
 		const emojis = [

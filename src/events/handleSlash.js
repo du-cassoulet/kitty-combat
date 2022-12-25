@@ -32,6 +32,14 @@ module.exports = new Event("interactionCreate", async (interaction) => {
 			});
 		}
 
+		if (
+			!((await guilds.get(`${interaction.guildId}.players`)) || []).includes(
+				interaction.user.id
+			)
+		) {
+			await guilds.push(`${interaction.guildId}.players`, interaction.user.id);
+		}
+
 		client.commands
 			.get(interaction.commandName)
 			.execute(interaction, translate);

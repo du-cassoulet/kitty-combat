@@ -20,7 +20,7 @@ module.exports = new Command({
 	category: Command.Categories.Economy,
 	execute: async function (slash, translate) {
 		const option = slash.options.getSubcommand();
-		const data = await getUser(slash.user.id);
+		const data = await getUser(slash.user);
 		const coins = data.inv.coins.current;
 
 		switch (option) {

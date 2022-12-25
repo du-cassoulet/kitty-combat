@@ -88,7 +88,7 @@ module.exports = new Command({
 	category: Command.Categories.Game,
 	autocomplete: async function (slash, translate) {
 		const query = slash.options.getFocused();
-		const data = await getUser(slash.user.id);
+		const data = await getUser(slash.user);
 		const userCats = data.inv.cats;
 		let unnamedAmount = 0;
 
@@ -125,7 +125,7 @@ module.exports = new Command({
 		switch (action) {
 			case "see": {
 				const catId = slash.options.getString("cat");
-				const data = await getUser(slash.user.id);
+				const data = await getUser(slash.user);
 				const userCats = data.inv.cats;
 
 				const Cat = Cats[catId];
@@ -227,7 +227,7 @@ module.exports = new Command({
 
 			case "rename": {
 				const catId = slash.options.getString("cat");
-				const data = await getUser(slash.user.id);
+				const data = await getUser(slash.user);
 				const userCats = data.inv.cats;
 
 				if (!Cats[catId]) {
@@ -251,7 +251,7 @@ module.exports = new Command({
 
 				return slash.reply({
 					content:
-						icons.new +
+						icons.success +
 						translate(
 							"RENAMED_CAT",
 							`**${oldName || translate("UNNAMED_CAT")}**`,
@@ -279,7 +279,7 @@ module.exports = new Command({
 					});
 				}
 
-				const data = await getUser(user.id);
+				const data = await getUser(user);
 				if (!data) {
 					return slash.reply({
 						content: emoji + " " + translate("USER_NOT_REGISTERED"),
@@ -466,7 +466,7 @@ module.exports = new Command({
 
 							ctx.textAlign = "center";
 							ctx.fillStyle = "#2f3136";
-							ctx.font = "60px 'SecularOne'";
+							ctx.font = "60px SecularOne";
 
 							ctx.fillText(
 								translate("UNKNOWN").toUpperCase(),
@@ -587,7 +587,7 @@ module.exports = new Command({
 
 			case "select": {
 				const catId = slash.options.getString("cat");
-				const data = await getUser(slash.user.id);
+				const data = await getUser(slash.user);
 				const inGame = client.inGame.get(slash.user.id);
 
 				if (inGame) {
@@ -626,7 +626,7 @@ module.exports = new Command({
 				await users.set(`${slash.user.id}.inv.selectedCat`, catId);
 				return slash.reply({
 					content:
-						icons.new +
+						icons.success +
 						(cat.name
 							? translate(
 									"SELECTED_CAT_NAME",

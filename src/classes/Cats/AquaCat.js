@@ -16,7 +16,21 @@ class AquaCat extends Cat {
 
 		this.atk1 = new Cat.Attack()
 			.setName("SPLASH")
-			.setDescription("SPLASH_DESCRIPTION");
+			.setDescription("SPLASH_DESCRIPTION")
+			.setIcon("💧")
+			.setDmg(18, 22)
+			.setHeal(0, 5)
+			.setStamina(8)
+			.setCrit(33, 1.25);
+
+		this.atk2 = new Cat.Attack()
+			.setName("TSUNAMI")
+			.setDescription("TSUNAMI_DESCRIPTION")
+			.setIcon("🌊")
+			.setDmg(10, 15)
+			.setTurns(3, [{ value: Cat.Attack.Features.Damages, dim: 0 }])
+			.setUsages(1)
+			.setStamina(16);
 	}
 }
 

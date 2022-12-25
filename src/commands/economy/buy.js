@@ -58,7 +58,7 @@ module.exports = new Command({
 				const eggId = slash.options.getString("egg");
 				const amount = slash.options.getInteger("amount") || 1;
 				const egg = eggs.find((e) => e.id === eggId);
-				const data = await getUser(slash.user.id);
+				const data = await getUser(slash.user);
 
 				if (!egg) {
 					return slash.reply({

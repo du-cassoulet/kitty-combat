@@ -34,7 +34,8 @@ class AngelCat extends Cat {
 			.setName("DODGE")
 			.setDescription("DODGE_DESCRIPTION")
 			.setIcon("💨")
-			.setDodgePer(50);
+			.setDodgePer(50)
+			.setStamina(10);
 	}
 }
 

@@ -2,7 +2,7 @@ const Discord = require("discord.js");
 const Event = require("../classes/Event");
 const translate = require("../functions/translate");
 
-module.exports = new Event("ready", () => {
+module.exports = new Event("ready", async () => {
 	if (dev) {
 		var target = client.guilds.cache.get(process.env.DEV_GUILD_ID);
 	} else {
@@ -17,6 +17,10 @@ module.exports = new Event("ready", () => {
 				option.nameLocalizations = {};
 				option.descriptionLocalizations = {};
 
+				for (const choice of option.choices || []) {
+					choice.nameLocalizations = {};
+				}
+
 				langs.forEach((lang) => {
 					option.nameLocalizations[lang] = translate(
 						lang.split("-")[0],
@@ -27,10 +31,21 @@ module.exports = new Event("ready", () => {
 						lang.split("-")[0],
 						option.description
 					);
+
+					for (const choice of option.choices || []) {
+						choice.nameLocalizations[lang] = translate(
+							lang.split("-")[0],
+							choice.name
+						);
+					}
 				});
 
 				option.name = translate("en", option.name);
 				option.description = translate("en", option.description);
+
+				for (const choice of option.choices || []) {
+					choice.name = translate("en", choice.name);
+				}
 
 				translateOptions(option.options || []);
 			}
