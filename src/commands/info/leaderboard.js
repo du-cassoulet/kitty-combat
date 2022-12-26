@@ -5,6 +5,7 @@ const Canvas = require("canvas");
 const getRank = require("../../functions/getRank");
 const path = require("path");
 const getColor = require("../../functions/getColor");
+const humanizeDuration = require("humanize-duration");
 
 const itemPerPage = 5;
 const ih = 75;
@@ -20,6 +21,7 @@ let goldIcon = null;
 let diamondIcon = null;
 let coinIcon = null;
 let swordIcon = null;
+let timeIcon = null;
 
 Canvas.loadImage(
 	path.join(__dirname, "../../assets/images/ranks/wood.png")
@@ -40,6 +42,10 @@ Canvas.loadImage(
 Canvas.loadImage(
 	path.join(__dirname, "../../assets/images/ranks/diamond.png")
 ).then((img) => (diamondIcon = img));
+
+Canvas.loadImage(path.join(__dirname, "../../assets/images/time.png")).then(
+	(img) => (timeIcon = img)
+);
 
 Canvas.loadImage(path.join(__dirname, "../../assets/images/sword.png")).then(
 	(img) => (swordIcon = img)
@@ -147,6 +153,29 @@ module.exports = new Command({
 					},
 				],
 			},
+			{
+				name: "PLAYED",
+				description: "PLAYED_DESCRIPTION",
+				type: Discord.ApplicationCommandOptionType.Subcommand,
+				options: [
+					{
+						name: "MODE",
+						description: "MODE_DESCRIPTION",
+						type: Discord.ApplicationCommandOptionType.String,
+						required: true,
+						choices: [
+							{
+								name: "GLOBAL",
+								value: "global",
+							},
+							{
+								name: "SERVER_ONLY",
+								value: "server",
+							},
+						],
+					},
+				],
+			},
 		],
 	},
 	category: Command.Categories.Info,
@@ -170,7 +199,6 @@ module.exports = new Command({
 		const mode = slash.options.getString("mode");
 
 		let players = await users.all();
-		players = [...players, ...players];
 		let page = 0;
 
 		if (mode === "server") {
@@ -201,6 +229,13 @@ module.exports = new Command({
 			case "losses": {
 				players = players.sort(
 					(a, b) => b.value.stats.losses - a.value.stats.losses
+				);
+				break;
+			}
+
+			case "time-played": {
+				players = players.sort(
+					(a, b) => b.value.stats.time - a.value.stats.time
 				);
 				break;
 			}
@@ -323,6 +358,18 @@ module.exports = new Command({
 					ctx.fillText(translate("LOSSES_RANKING"), hs - gap + 8, hs / 2);
 					ctx.drawImage(
 						swordIcon,
+						gap + 12,
+						gap + 8,
+						hs - gap * 2 - 16,
+						hs - gap * 2 - 16
+					);
+					break;
+				}
+
+				case "time-played": {
+					ctx.fillText(translate("TIME_RANKING"), hs - gap + 8, hs / 2);
+					ctx.drawImage(
+						timeIcon,
 						gap + 12,
 						gap + 8,
 						hs - gap * 2 - 16,
@@ -497,6 +544,30 @@ module.exports = new Command({
 					case "losses": {
 						ctx.fillText(
 							"x" + user.value.stats.losses.toLocaleString(slash.locale),
+							iw - gap,
+							hs + gap + i * (ih + ig) + ih / 2
+						);
+						break;
+					}
+
+					case "time-played": {
+						ctx.fillText(
+							humanizeDuration(user.value.stats.time, {
+								language: "short",
+								languages: {
+									short: {
+										y: () => "y",
+										mo: () => "mo",
+										w: () => "w",
+										d: () => "d",
+										h: () => "h",
+										m: () => "m",
+										s: () => "s",
+										ms: () => "ms",
+									},
+								},
+								round: true,
+							}),
 							iw - gap,
 							hs + gap + i * (ih + ig) + ih / 2
 						);

@@ -255,8 +255,8 @@ module.exports = new Command({
 				translate("DO_CAT_SELECT", getCommand("cat select"));
 
 			await slash.editReply({ embeds: [embed] });
-
 			const message = await game.slash.fetchReply();
+
 			game.delete();
 			return slash.channel.send({
 				embeds: [
@@ -889,12 +889,14 @@ module.exports = new Command({
 				hostTurn = !hostTurn;
 				if (hostTurn) turn++;
 
-				const loser = [player1, player2].find((p) => p.game.health <= 0);
-				if (loser) {
-					const winner = [player1, player2].find(
-						(p) => loser.user.id !== p.user.id
-					);
+				const playerOrder = [
+					hostTurn ? player1 : player2,
+					hostTurn ? player2 : player1,
+				];
 
+				const loser = playerOrder.find((p) => p.game.health <= 0);
+				if (loser) {
+					const winner = playerOrder.find((p) => loser.user.id !== p.user.id);
 					return await endGame(winner, loser);
 				} else {
 					return await slash.editReply({

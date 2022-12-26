@@ -290,14 +290,14 @@ class Cat {
 		this.atk1 = new Attack()
 			.setName("PAW_HIT")
 			.setDescription("PAW_HIT_DESCRIPTION")
-			.setDmg(dev ? 100 : 10, dev ? 100 : 20)
+			.setDmg(10, 20)
 			.setCrit(5, 1.5)
 			.setStamina(5);
 
 		this.atk2 = new Attack()
 			.setName("PAW_HIT")
 			.setDescription("PAW_HIT_DESCRIPTION")
-			.setDmg(dev ? 100 : 10, dev ? 100 : 20)
+			.setDmg(10, 20)
 			.setCrit(5, 1.5)
 			.setStamina(5);
 

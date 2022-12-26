@@ -80,7 +80,7 @@ class Inventory {
 	 */
 	static form(data) {
 		return new Inventory()
-			.setCoins(data.coins)
+			.setCoins(data.coins.current, data.coins.highest)
 			.setCats(data.cats)
 			.setEggs(data.eggs)
 			.setEggsOpened(data.eggsOpened)

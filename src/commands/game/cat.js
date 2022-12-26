@@ -7,7 +7,6 @@ const Canvas = require("canvas");
 const User = require("../../classes/User");
 const getUser = require("../../functions/getUser");
 const Cats = require("../../classes/Cats");
-const Cat = require("../../classes/Cat");
 
 function clean(s) {
 	return s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -166,7 +165,7 @@ module.exports = new Command({
 								},
 								{
 									name: translate("SOUL_AMOUNT"),
-									value: `${icons.medaillon} ×${catInfo.souls.toLocaleString(
+									value: `${icons.medaillon} x${catInfo.souls.toLocaleString(
 										slash.locale
 									)}`,
 									inline: true,
