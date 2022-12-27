@@ -7,6 +7,7 @@ class Cat {
 		this.name = null;
 		this.catId = null;
 		this.souls = 0;
+		this.addedAt = Date.now();
 		this.damages = { xp: 0, level: 0 };
 		this.defence = { xp: 0, level: 0 };
 	}
@@ -22,7 +23,8 @@ class Cat {
 			.setCatId(data.catId)
 			.setSouls(data.souls)
 			.setDamages(data.damages.xp, data.damages.level)
-			.setDefence(data.defence.xp, data.defence.level);
+			.setDefence(data.defence.xp, data.defence.level)
+			.setAddedAt(data.addedAt);
 	}
 
 	/**
@@ -69,6 +71,12 @@ class Cat {
 	 */
 	setSouls(souls) {
 		this.souls = souls ?? this.souls;
+		return this;
+	}
+
+	/** @type {number} */
+	setAddedAt(addedAt) {
+		this.addedAt = addedAt ?? this.addedAt;
 		return this;
 	}
 }
@@ -288,6 +296,7 @@ class User {
 			.setAvatarURL(data.avatarURL)
 			.setJoinedAt(data.joinedAt)
 			.setElo(data.elo)
+			.setHist(data.hist)
 			.setInv(Inventory.form(data.inv))
 			.setStats(Stats.form(data.stats))
 			.setLeveling(Leveling.form(data.leveling));
@@ -301,10 +310,14 @@ class User {
 		this.avatarURL = null;
 
 		this.joinedAt = Date.now();
+		this.usages = 0;
 		this.elo = 1000;
 		this.inv = new User.Inventory();
 		this.stats = new User.Stats();
 		this.leveling = new User.Leveling();
+
+		/** @type {number[]} */
+		this.hist = [this.elo];
 	}
 
 	/**
@@ -349,6 +362,15 @@ class User {
 	}
 
 	/**
+	 * @param {number[]} hist
+	 * @returns {User}
+	 */
+	setHist(hist) {
+		this.hist = hist ?? this.hist;
+		return this;
+	}
+
+	/**
 	 * @param {Inventory} inv
 	 * @returns {User}
 	 */
@@ -372,6 +394,15 @@ class User {
 	 */
 	setLeveling(leveling) {
 		this.leveling = leveling ?? this.leveling;
+		return this;
+	}
+
+	/**
+	 * @param {number} usages
+	 * @returns {User}
+	 */
+	setUsages(usages) {
+		this.usages = usages ?? this.usages;
 		return this;
 	}
 }

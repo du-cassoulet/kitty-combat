@@ -27,12 +27,12 @@ class ZeusCat extends Cat {
 			.setDescription("DRAIN_DESCRIPTION")
 			.setIcon("🥀")
 			.setDmg(
-				(this.opponent?.health || 100) * 0.1,
-				(this.opponent?.health || 100) * 0.1
+				() => (this.opponent?.health || 100) * 0.1,
+				() => (this.opponent?.health || 100) * 0.1
 			)
 			.setHeal(
-				(this.opponent?.health || 100) * 0.1,
-				(this.opponent?.health || 100) * 0.1
+				() => (this.opponent?.health || 100) * 0.1,
+				() => (this.opponent?.health || 100) * 0.1
 			)
 			.setTurns(2, [{ value: Cat.Attack.Features.Damages, dim: 0 }])
 			.setStamina(75);
@@ -40,7 +40,11 @@ class ZeusCat extends Cat {
 		this.def = new Cat.Defence()
 			.setName("TAKE_HEAL")
 			.setDescription("TAKE_HEAL_DESCRIPTION")
-			.setStamina(100 - this.user.stamina)
+			.setHeal(
+				(this.user?.health || 100) - (this.opponent?.health || 100),
+				(this.user?.health || 100) - (this.opponent?.health || 100)
+			)
+			.setStamina(() => 100 - (this.user?.stamina || 100))
 			.setUsages(1);
 	}
 }

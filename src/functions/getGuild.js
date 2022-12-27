@@ -1,7 +1,11 @@
 const Guild = require("../classes/Guild");
+const Discord = require("discord.js");
 
-async function getGuild(id) {
-	return Guild.form(await guilds.get(id));
+/**
+ * @param {Discord} guild
+ */
+async function getGuild(guild) {
+	return Guild.form(await guilds.get(guild.id));
 }
 
 module.exports = getGuild;

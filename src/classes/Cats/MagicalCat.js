@@ -19,8 +19,8 @@ class MagicalCat extends Cat {
 			.setDescription("ARCANE_STRIKE_DESCRIPTION")
 			.setIcon("✨")
 			.setDmg(
-				(this.opponent?.health || 100) * 0.3,
-				(this.opponent?.health || 100) * 0.3
+				() => (this.opponent?.health || 100) * 0.3,
+				() => (this.opponent?.health || 100) * 0.3
 			)
 			.setUsages(2)
 			.setStamina(15);

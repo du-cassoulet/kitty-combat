@@ -18,7 +18,7 @@ class FireCat extends Cat {
 			.setName("LAVA_LASH")
 			.setDescription("LAVA_LASH_DESCRIPTION")
 			.setIcon("🌋")
-			.setDmg(10, 20)
+			.setDmg(5, 15)
 			.setTurns(2, [{ value: Cat.Attack.Features.Damages, dim: 50 }])
 			.setStamina(5);
 

@@ -36,7 +36,14 @@ class Logger {
 		for (const arg of args) {
 			if (["number", "string"].includes(typeof arg)) {
 				console.log(
-					Logger.Markup.BgMagenta +
+					(dev
+						? Logger.Markup.BgYellow +
+						  Logger.Markup.FgBlack +
+						  "[DEV]" +
+						  Logger.Markup.Reset +
+						  " "
+						: "") +
+						Logger.Markup.BgMagenta +
 						Logger.Markup.FgBlack +
 						"[INFO]" +
 						Logger.Markup.Reset +
@@ -58,7 +65,14 @@ class Logger {
 		for (const arg of args) {
 			if (["number", "string"].includes(typeof arg)) {
 				console.log(
-					Logger.Markup.BgCyan +
+					(dev
+						? Logger.Markup.BgYellow +
+						  Logger.Markup.FgBlack +
+						  "[DEV]" +
+						  Logger.Markup.Reset +
+						  " "
+						: "") +
+						Logger.Markup.BgCyan +
 						Logger.Markup.FgBlack +
 						"[DATABASE]" +
 						Logger.Markup.Reset +
@@ -80,11 +94,47 @@ class Logger {
 		for (const arg of args) {
 			if (["number", "string"].includes(typeof arg)) {
 				console.log(
-					Logger.Markup.BgGreen +
+					(dev
+						? Logger.Markup.BgYellow +
+						  Logger.Markup.FgBlack +
+						  "[DEV]" +
+						  Logger.Markup.Reset +
+						  " "
+						: "") +
+						Logger.Markup.BgGreen +
 						Logger.Markup.FgBlack +
 						"[EVENT]" +
 						Logger.Markup.Reset +
 						Logger.Markup.FgGreen +
+						" " +
+						arg +
+						Logger.Markup.Reset
+				);
+			} else {
+				console.log(arg);
+			}
+		}
+	}
+
+	/**
+	 * @param  {...string|number} args
+	 */
+	feed(...args) {
+		for (const arg of args) {
+			if (["number", "string"].includes(typeof arg)) {
+				console.log(
+					(dev
+						? Logger.Markup.BgYellow +
+						  Logger.Markup.FgBlack +
+						  "[DEV]" +
+						  Logger.Markup.Reset +
+						  " "
+						: "") +
+						Logger.Markup.BgBlue +
+						Logger.Markup.FgBlack +
+						"[FEED]" +
+						Logger.Markup.Reset +
+						Logger.Markup.FgBlue +
 						" " +
 						arg +
 						Logger.Markup.Reset

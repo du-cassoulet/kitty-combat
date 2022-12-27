@@ -217,7 +217,8 @@ module.exports = new Command({
 		ctx.fillText(
 			"x" +
 				data.inv.cats
-					.reduce((a, b) => (a.souls || 0) + (b.souls || 0), 0)
+					.map((c) => c.souls || 0)
+					.reduce((a, b) => a + b, 0)
 					.toLocaleString(slash.locale),
 			pad + 70,
 			pad + 97
@@ -300,6 +301,10 @@ module.exports = new Command({
 			pad * 3 + 310
 		);
 
+		const buffer = canvas.toBuffer();
+		stats.add("images.number", 1);
+		stats.add("images.size", buffer.byteLength);
+
 		function components(disabled) {
 			return [
 				new Discord.ActionRowBuilder().setComponents(
@@ -317,7 +322,7 @@ module.exports = new Command({
 			ephemeral: slash.isContextMenuCommand(),
 			files: [
 				new Discord.AttachmentBuilder()
-					.setFile(canvas.toBuffer())
+					.setFile(buffer)
 					.setName("profile.png")
 					.setDescription(translate("USER_PROFILE", user.tag)),
 			],

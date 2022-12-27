@@ -7,6 +7,7 @@ const User = require("../../classes/User");
 const getCommand = require("../../functions/getCommand");
 const getUser = require("../../functions/getUser");
 const Cats = require("../../classes/Cats");
+const getColor = require("../../functions/getColor");
 
 function clean(s) {
 	return s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -47,7 +48,7 @@ module.exports = new Command({
 		);
 	},
 	execute: async function (slash, translate) {
-		const data = await getUser(slash.user);
+		let data = await getUser(slash.user);
 		const userEggIDs = data.inv.eggs;
 		const eggId = slash.options.getString("egg");
 
@@ -86,11 +87,13 @@ module.exports = new Command({
 		});
 
 		const rarityCats = Object.values(Cats).filter((c) => c.rarity === rarity);
-		const cat = rarityCats[Math.floor(Math.random() * rarityCats.length)];
+		const Cat = rarityCats[Math.floor(Math.random() * rarityCats.length)];
+		const cat = new Cat();
 
 		return setTimeout(async () => {
+			data = await getUser(slash.user);
 			const embed = new Discord.EmbedBuilder()
-				.setColor(client.embedColor)
+				.setColor(getColor(cat.imageData).hex)
 				.setThumbnail(`attachment://${cat.id}.png`)
 				.setTitle(translate("EGG_HATCHED"));
 
@@ -128,6 +131,7 @@ module.exports = new Command({
 						.setSouls(1)
 						.setDamages(0, 1)
 						.setDefence(0, 1)
+						.setAddedAt(Date.now())
 				);
 
 				embed.setDescription(

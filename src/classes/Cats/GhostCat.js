@@ -19,12 +19,12 @@ class GhostCat extends Cat {
 			.setDescription("HAUNT_DESCRIPTION")
 			.setIcon("👻")
 			.setDmg(
-				(this.opponent?.health || 100) * 0.1,
-				(this.opponent?.health || 100) * 0.1
+				() => (this.opponent?.health || 100) * 0.1,
+				() => (this.opponent?.health || 100) * 0.1
 			)
 			.setHeal(
-				(this.opponent?.health || 100) * 0.1,
-				(this.opponent?.health || 100) * 0.1
+				() => (this.opponent?.health || 100) * 0.1,
+				() => (this.opponent?.health || 100) * 0.1
 			)
 			.setStamina(15)
 			.setUsages(2);

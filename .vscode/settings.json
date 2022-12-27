@@ -1,8 +1,3 @@
 {
-	"dotenv.enableAutocloaking": false,
-	"background.fullscreen": {
-		"image": "https://i.imgur.com/xrhdpSL.jpg",
-		"opacity": 0.9,
-		"size": "cover"
-	}
+	"dotenv.enableAutocloaking": false
 }

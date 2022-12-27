@@ -1,5 +1,7 @@
 class Guild {
 	constructor() {
+		this.name = null;
+
 		/** @type {string[]} */
 		this.players = [];
 	}
@@ -13,7 +15,12 @@ class Guild {
 	}
 
 	setPlayers(players) {
-		this.players = players;
+		this.players = players ?? this.players;
+		return this;
+	}
+
+	setName(name) {
+		this.name = name ?? this.name;
 		return this;
 	}
 }

@@ -355,8 +355,15 @@ class Cat {
 		atk.use();
 		const critical = turn.critBoost || randInt(1, 100) <= atk.crit.per;
 
-		let dmg = randInt(atk.dmg.min, atk.dmg.max);
-		const heal = randInt(atk.heal.min, atk.heal.max);
+		let dmg = randInt(
+			typeof atk.dmg.min === "function" ? atk.dmg.min() : atk.dmg.min,
+			typeof atk.dmg.max === "function" ? atk.dmg.max() : atk.dmg.max
+		);
+
+		const heal = randInt(
+			typeof atk.dmg.min === "function" ? atk.heal.min() : atk.heal.min,
+			typeof atk.dmg.max === "function" ? atk.heal.min() : atk.heal.max
+		);
 
 		if (critical) dmg *= atk.crit.mul;
 		for (const mul of turn.dmg.muls) dmg *= mul;
@@ -417,14 +424,26 @@ class Cat {
 			const absFt = getFeature(Attack.Features.Absorbtion);
 
 			if (dmgFt) {
-				const min = (dmgFt.dim / 100) ** i * dmg.min;
-				const max = (dmgFt.dim / 100) ** i * dmg.max;
+				const min =
+					(dmgFt.dim / 100) ** i *
+					(typeof dmg.min === "function" ? dmg.min() : dmg.min);
+
+				const max =
+					(dmgFt.dim / 100) ** i *
+					(typeof dmg.max === "function" ? dmg.max() : dmg.max);
+
 				nextTurn.setDmg(randInt(min, max));
 			}
 
 			if (healFt) {
-				const min = (healFt.dim / 100) ** i * heal.min;
-				const max = (healFt.dim / 100) ** i * heal.max;
+				const min =
+					(healFt.dim / 100) ** i *
+					(typeof heal.min === "function" ? heal.min() : heal.min);
+
+				const max =
+					(healFt.dim / 100) ** i *
+					(typeof heal.max === "function" ? heal.max() : heal.max);
+
 				nextTurn.setHeal(randInt(min, max));
 			}
 
@@ -439,21 +458,21 @@ class Cat {
 			this._setTurn(turn + i, nextTurn);
 		}
 
-		return { atk, prot };
+		return { atk, prot, stamina };
 	}
 
 	/**
 	 * @param {number} turn
 	 */
 	doAttack1(turn) {
-		this._doAttack(this.atk1, turn);
+		return this._doAttack(this.atk1, turn);
 	}
 
 	/**
 	 * @param {number} turn
 	 */
 	doAttack2(turn) {
-		this._doAttack(this.atk2, turn);
+		return this._doAttack(this.atk2, turn);
 	}
 
 	/**
@@ -464,7 +483,9 @@ class Cat {
 
 		const def = this._doDef(this.def, userTurn);
 		this.user.addHealth(def.heal);
-		this.user.modStamina(def.stamina);
+		this.user.modStamina(
+			typeof def.stamina === "function" ? def.stamina() : def.stamina
+		);
 		this.opponent.remHealth(userTurn.dmg.val);
 
 		this._setTurn(

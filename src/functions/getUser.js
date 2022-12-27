@@ -12,11 +12,11 @@ async function getUser(user) {
 		size: 512,
 	});
 
-	if (userData.tag !== user.tag) {
+	if (userData && userData.tag !== user.tag) {
 		await users.set(`${user.id}.tag`, user.tag);
 	}
 
-	if (userData.avatarURL !== userAvatar) {
+	if (userData && userData.avatarURL !== userAvatar) {
 		await users.set(`${user.id}.avatarURL`, userAvatar);
 	}
 

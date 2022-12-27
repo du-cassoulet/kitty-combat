@@ -57,6 +57,12 @@ module.exports = new Command({
 	},
 	category: Command.Categories.Game,
 	execute: async function (slash, translate) {
+		function ns(n) {
+			return n >= 0
+				? "+" + Math.floor(n).toLocaleString(slash.locale)
+				: Math.floor(n).toLocaleString(slash.locale);
+		}
+
 		const inGame = client.inGame.get(slash.user.id);
 		const data = await getUser(slash.user);
 
@@ -134,7 +140,9 @@ module.exports = new Command({
 					translate("QUEUED") +
 					"*" +
 					"\n\n" +
-					translate("DO_CAT_SELECT", getCommand("cat select"))
+					translate("DO_CAT_SELECT", getCommand("cat select")) +
+					"\n\n⚠️ " +
+					translate("TIME_TO_PLAY")
 			)
 			.setTitle(translate("BATTLE_TITLE"))
 			.setThumbnail("attachment://battle-icon.png")
@@ -173,7 +181,7 @@ module.exports = new Command({
 		const Cat1 = Cats[player1.data.inv.selectedCat];
 
 		/** @type {Cat} */
-		const cat1 = new Cat1();
+		let cat1 = new Cat1();
 
 		/** @type {{game:Game.User,data:User,user:Discord.User}} */
 		let player2 = null;
@@ -212,7 +220,10 @@ module.exports = new Command({
 			ctx.drawImage(lightning, side - 40, 0, 80, side + 100);
 			ctx.drawImage(versusIcon, side / 2, side - 190, side, 190);
 
-			return canvas.toBuffer();
+			const buffer = canvas.toBuffer();
+			stats.add("images.number", 1);
+			stats.add("images.size", buffer.byteLength);
+			return buffer;
 		}
 
 		const botMessage = await slash.reply({
@@ -236,12 +247,42 @@ module.exports = new Command({
 		});
 
 		/**
+		 * @param {Discord.User} user
+		 * @param {User} data
+		 */
+		async function updateCats(user, data) {
+			if (player1.user.id === user.id) {
+				player1.data = data;
+				const Cat = Cats[player1.data.inv.selectedCat];
+				cat1 = new Cat();
+			} else if (player2?.user?.id === user.id) {
+				player2.data = data;
+				const Cat = Cats[player1.data.inv.selectedCat];
+				cat2 = new Cat();
+			} else return;
+
+			await slash.editReply({
+				files: [
+					new Discord.AttachmentBuilder()
+						.setFile(
+							path.join(__dirname, "../../assets/images/battle-icon.png")
+						)
+						.setName("battle-icon.png"),
+					new Discord.AttachmentBuilder()
+						.setFile(vsScreen(cat1, cat2))
+						.setName("vs_screen.png"),
+				],
+			});
+		}
+
+		/**
 		 * @param {string} hostId
 		 * @param {Discord.User} user
 		 */
 		async function stopLobby(hostId, user) {
 			if (game.hostId !== hostId) return;
 			client.removeListener("stopGame", stopLobby);
+			client.removeListener("newSelectedCat", updateCats);
 
 			if (timeout) clearTimeout(timeout);
 			collector.stop();
@@ -252,7 +293,9 @@ module.exports = new Command({
 				translate("GAME_CANCELLED") +
 				"*" +
 				"\n\n" +
-				translate("DO_CAT_SELECT", getCommand("cat select"));
+				translate("DO_CAT_SELECT", getCommand("cat select")) +
+				"\n\n" +
+				translate("TIME_TO_PLAY");
 
 			await slash.editReply({ embeds: [embed] });
 			const message = await game.slash.fetchReply();
@@ -289,6 +332,8 @@ module.exports = new Command({
 		}
 
 		client.addListener("stopGame", stopLobby);
+		client.addListener("newSelectedCat", updateCats);
+
 		collector.on("collect", async (button) => {
 			const opponentData = await getUser(button.user);
 			if (!opponentData) {
@@ -358,7 +403,9 @@ module.exports = new Command({
 					) +
 					"*" +
 					"\n\n" +
-					translate("DO_CAT_SELECT", getCommand("cat select"));
+					translate("DO_CAT_SELECT", getCommand("cat select")) +
+					"\n\n⚠️ " +
+					translate("TIME_TO_PLAY");
 
 				leaveMode = true;
 				timeout = setTimeout(async () => {
@@ -391,7 +438,9 @@ module.exports = new Command({
 					translate("QUEUED") +
 					"*" +
 					"\n\n" +
-					translate("DO_CAT_SELECT", getCommand("cat select"));
+					translate("DO_CAT_SELECT", getCommand("cat select")) +
+					"\n\n⚠️ " +
+					translate("TIME_TO_PLAY");
 
 				leaveMode = false;
 				if (!leaves[button.user.id]) {
@@ -420,6 +469,7 @@ module.exports = new Command({
 
 		collector.on("end", () => {
 			client.removeListener("stopGame", stopLobby);
+			client.removeListener("newSelectedCat", updateCats);
 			if (!game.starting) return;
 
 			game.delete();
@@ -458,8 +508,8 @@ module.exports = new Command({
 							.setEmoji(userCat.atk1.icon)
 							.setDisabled(
 								disabled ||
-									(!userCat.atk1.isAvailable() &&
-										userCat.user.stamina >= userCat.atk1.stamina)
+									!userCat.atk1.isAvailable() ||
+									userCat.user.stamina < userCat.atk1.stamina
 							),
 						new Discord.ButtonBuilder()
 							.setCustomId("attack-2")
@@ -471,8 +521,8 @@ module.exports = new Command({
 							.setEmoji(userCat.atk2.icon)
 							.setDisabled(
 								disabled ||
-									(!userCat.atk2.isAvailable() &&
-										userCat.user.stamina >= userCat.atk2.stamina)
+									!userCat.atk2.isAvailable() ||
+									userCat.user.stamina < userCat.atk2.stamina
 							),
 						new Discord.ButtonBuilder()
 							.setCustomId("defence")
@@ -495,7 +545,20 @@ module.exports = new Command({
 				];
 			}
 
-			async function embed() {
+			/**
+			 * @param {boolean} showTurn
+			 * @param {{
+			 * dmg:number,
+			 * protDmg:number,
+			 * heal:number,
+			 * stamina:number,
+			 * absPer:number,
+			 * boost:boolean,
+			 * dodged:boolean,
+			 * critical:boolean
+			 * }} act
+			 */
+			async function embed(showTurn, act = {}) {
 				return new Discord.EmbedBuilder()
 					.setColor(getColor(cat().imageData).hex)
 					.setThumbnail(`attachment://${cat().id}.png`)
@@ -511,30 +574,64 @@ module.exports = new Command({
 								(hostTurn ? "<:arrowwhiteright:1054004554464768012> " : "") +
 								player1.user.tag,
 							value:
+								"❤️ " +
 								translate(
 									"HEALTH",
 									cat1.user.health.toLocaleString(slash.locale)
 								) +
-								"\n" +
+								(!showTurn
+									? ""
+									: hostTurn
+									? act.heal !== 0
+										? " *" +
+										  ns(act.heal) +
+										  "*" +
+										  (act.boost ? " " + translate("BOOST") : "")
+										: ""
+									: act.dmg !== 0
+									? " *" +
+									  ns(act.dmg) +
+									  "*" +
+									  (act.critical ? " " + translate("CRITICAL") : "")
+									: "") +
+								"\n☄️ " +
 								translate(
 									"STAMINA",
 									cat1.user.stamina.toLocaleString(slash.locale)
-								),
+								) +
+								(!showTurn ? "" : hostTurn ? " *" + ns(act.stamina) + "*" : ""),
 						},
 						{
 							name:
 								(hostTurn ? "" : "<:arrowwhiteright:1054004554464768012> ") +
 								player2.user.tag,
 							value:
+								"❤️ " +
 								translate(
 									"HEALTH",
 									cat2.user.health.toLocaleString(slash.locale)
 								) +
-								"\n" +
+								(!showTurn
+									? ""
+									: hostTurn
+									? act.dmg !== 0
+										? " *" +
+										  ns(act.dmg) +
+										  "*" +
+										  (act.critical ? " " + translate("CRITICAL") : "")
+										: ""
+									: act.heal !== 0
+									? " *" +
+									  ns(act.heal) +
+									  "*" +
+									  (act.boost ? " " + translate("BOOST") : "")
+									: "") +
+								"\n☄️ " +
 								translate(
 									"STAMINA",
 									cat2.user.stamina.toLocaleString(slash.locale)
-								),
+								) +
+								(!showTurn ? "" : hostTurn ? "" : " *" + ns(act.stamina) + "*"),
 						}
 					);
 			}
@@ -550,7 +647,7 @@ module.exports = new Command({
 			}
 
 			const botMessage = await slash.editReply({
-				embeds: [await embed()],
+				embeds: [await embed(false)],
 				components: components(false),
 				files: files(),
 			});
@@ -607,7 +704,7 @@ module.exports = new Command({
 			 * @param {{game:Game.User,data:User,user:Discord.User}} winner
 			 * @param {{game:Game.User,data:User,user:Discord.User}} loser
 			 */
-			async function endGame(winner, loser) {
+			async function endGame(winner, loser, reason = null) {
 				end = true;
 				game.delete();
 				collector.stop();
@@ -642,7 +739,7 @@ module.exports = new Command({
 					loserCat.damages,
 					false,
 					User.Cat.Leveling.Range
-				);
+				).leveling;
 
 				loserCat.defence = addExp(
 					loserCat.defence,
@@ -684,6 +781,9 @@ module.exports = new Command({
 				winner.data.elo = elo.updateRating(expectedW, 1, winner.data.elo);
 				loser.data.elo = elo.updateRating(expectedL, 0, loser.data.elo);
 
+				winner.data.hist.push(winner.data.elo);
+				loser.data.hist.push(loser.data.elo);
+
 				await users.set(winner.user.id, winner.data);
 				await users.set(loser.user.id, loser.data);
 
@@ -721,14 +821,17 @@ module.exports = new Command({
 									})
 								)
 								.setDescription(
-									translate(
-										"GAME_TURNS_TIME",
-										`**${turn.toLocaleString(slash.locale)}**`,
-										`**${humanizeDuration(endTime - start, {
-											language: slash.locale.split("-")[0],
-											round: true,
-										})}**`
-									)
+									(reason
+										? "<:pinkarrow:1053997226759827507> **" + reason + "**\n"
+										: "") +
+										translate(
+											"GAME_TURNS_TIME",
+											`**${turn.toLocaleString(slash.locale)}**`,
+											`**${humanizeDuration(endTime - start, {
+												language: slash.locale.split("-")[0],
+												round: true,
+											})}**`
+										)
 								)
 								.setFields(
 									{
@@ -817,27 +920,56 @@ module.exports = new Command({
 			}
 
 			collector.on("collect", async (button) => {
-				if (button.user.id !== (hostTurn ? player1.user.id : player2.user.id)) {
+				if (
+					button.customId !== "info" &&
+					button.user.id !== (hostTurn ? player1.user.id : player2.user.id)
+				) {
 					return button.reply({
 						content: icons.error + translate("NOT_TURN"),
 						ephemeral: true,
 					});
 				}
 
+				let dmg = 0,
+					protDmg = 0,
+					heal = 0,
+					stamina = 0,
+					absPer = 0,
+					boost = false,
+					dodged = false,
+					critical = false;
+
 				const userCat = cat();
 				switch (button.customId) {
 					case "attack-1": {
-						userCat.doAttack1(turn);
+						const attack = userCat.doAttack1(turn);
+						dmg = -attack.atk.dmg;
+						critical = attack.atk.critical;
+						heal = attack.atk.heal;
+						protDmg = attack.prot.dmg;
+						dodged = attack.prot.dodged;
+						absPer = attack.prot.absPer;
+						stamina = -attack.stamina;
 						break;
 					}
 
 					case "attack-2": {
-						userCat.doAttack2(turn);
+						const attack = userCat.doAttack2(turn);
+						dmg = -attack.atk.dmg;
+						critical = attack.atk.critical;
+						heal = attack.atk.heal;
+						protDmg = attack.prot.dmg;
+						dodged = attack.prot.dodged;
+						absPer = attack.prot.absPer;
+						stamina = -attack.stamina;
 						break;
 					}
 
 					case "defence": {
-						userCat.doDefence(turn);
+						const defence = userCat.doDefence(turn);
+						heal = defence.def.heal;
+						boost = defence.def.boost;
+						stamina = defence.def.stamina;
 						break;
 					}
 
@@ -886,8 +1018,6 @@ module.exports = new Command({
 
 				button.deferUpdate();
 				collector.resetTimer();
-				hostTurn = !hostTurn;
-				if (hostTurn) turn++;
 
 				const playerOrder = [
 					hostTurn ? player1 : player2,
@@ -899,11 +1029,32 @@ module.exports = new Command({
 					const winner = playerOrder.find((p) => loser.user.id !== p.user.id);
 					return await endGame(winner, loser);
 				} else {
-					return await slash.editReply({
-						components: components(false),
-						embeds: [await embed()],
-						files: files(),
+					await slash.editReply({
+						components: components(true),
+						embeds: [
+							await embed(true, {
+								absPer,
+								boost,
+								critical,
+								dmg,
+								dodged,
+								heal,
+								protDmg,
+								stamina,
+							}),
+						],
 					});
+
+					hostTurn = !hostTurn;
+					if (hostTurn) turn++;
+
+					setTimeout(async () => {
+						return await slash.editReply({
+							components: components(false),
+							embeds: [await embed(false)],
+							files: files(),
+						});
+					}, 2000);
 				}
 			});
 
@@ -913,9 +1064,17 @@ module.exports = new Command({
 				if (!end) {
 					end = true;
 					if (hostTurn) {
-						return await endGame(player2, player1);
+						return await endGame(
+							player2,
+							player1,
+							translate("ENDED_TIME", player1.user.toString())
+						);
 					} else {
-						return await endGame(player1, player2);
+						return await endGame(
+							player1,
+							player2,
+							translate("ENDED_TIME", player2.user.toString())
+						);
 					}
 				}
 			});

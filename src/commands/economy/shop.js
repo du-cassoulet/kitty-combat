@@ -21,7 +21,6 @@ module.exports = new Command({
 	execute: async function (slash, translate) {
 		const option = slash.options.getSubcommand();
 		const data = await getUser(slash.user);
-		console.log(data.inv);
 		const coins = data.inv.coins.current;
 
 		switch (option) {

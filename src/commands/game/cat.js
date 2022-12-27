@@ -7,6 +7,7 @@ const Canvas = require("canvas");
 const User = require("../../classes/User");
 const getUser = require("../../functions/getUser");
 const Cats = require("../../classes/Cats");
+const Cat = require("../../classes/Cat");
 
 function clean(s) {
 	return s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -123,8 +124,8 @@ module.exports = new Command({
 
 		switch (action) {
 			case "see": {
+				let data = await getUser(slash.user);
 				const catId = slash.options.getString("cat");
-				const data = await getUser(slash.user);
 				const userCats = data.inv.cats;
 
 				const Cat = Cats[catId];
@@ -145,16 +146,32 @@ module.exports = new Command({
 					});
 				}
 
-				const catColor = getColor(
-					await Canvas.loadImage(
-						path.join(__dirname, "../../assets/images/cats", Cat.image)
-					)
-				).hex;
+				/** @type {Cat} */
+				const cat = new Cat();
 
-				return slash.reply({
+				function components(disabled) {
+					return [
+						new Discord.ActionRowBuilder().setComponents(
+							new Discord.ButtonBuilder()
+								.setCustomId("select")
+								.setStyle(Discord.ButtonStyle.Secondary)
+								.setEmoji("1054419983075115028")
+								.setLabel(translate("SELECT_THIS_CAT"))
+								.setDisabled(disabled),
+							new Discord.ButtonBuilder()
+								.setCustomId("info")
+								.setStyle(Discord.ButtonStyle.Secondary)
+								.setEmoji("1053602021808283709")
+								.setLabel(translate("ACT_INFO"))
+								.setDisabled(disabled)
+						),
+					];
+				}
+
+				const botMessage = await slash.reply({
 					embeds: [
 						new Discord.EmbedBuilder()
-							.setColor(catColor)
+							.setColor(getColor(cat.imageData).hex)
 							.setTitle("💭 " + (catInfo.name || translate("UNNAMED_CAT")))
 							.setThumbnail(`attachment://${Cat.id}_thumbnail.png`)
 							.setFields(
@@ -215,6 +232,7 @@ module.exports = new Command({
 								}
 							),
 					],
+					components: components(false),
 					files: [
 						new Discord.AttachmentBuilder(
 							path.join(__dirname, "../../assets/images/cats", Cat.image),
@@ -222,6 +240,125 @@ module.exports = new Command({
 						),
 					],
 				});
+
+				const collector = botMessage.createMessageComponentCollector({
+					time: 6e4,
+					filter: (i) => i.isButton(),
+				});
+
+				collector.on("collect", async (button) => {
+					collector.resetTimer();
+
+					switch (button.customId) {
+						case "info": {
+							return await button.reply({
+								embeds: [
+									new Discord.EmbedBuilder()
+										.setColor(getColor(cat.imageData).hex)
+										.setTitle(translate("INFO_ABOUT", translate(cat.name)))
+										.setThumbnail(`attachment://${cat.id}.png`)
+										.setFields(
+											{
+												name:
+													"<:pinkarrow:1053997226759827507> " +
+													translate("ATTACK_1") +
+													" - " +
+													translate(cat.atk1.name),
+												value: translate(cat.atk1.description),
+												inline: true,
+											},
+											{
+												name:
+													"<:pinkarrow:1053997226759827507> " +
+													translate("ATTACK_2") +
+													" - " +
+													translate(cat.atk2.name),
+												value: translate(cat.atk2.description),
+												inline: true,
+											},
+											{
+												name:
+													"<:pinkarrow:1053997226759827507> " +
+													translate("DEFENCE") +
+													" - " +
+													translate(cat.def.name),
+												value: translate(cat.def.description),
+												inline: false,
+											}
+										),
+								],
+								ephemeral: true,
+								files: [
+									new Discord.AttachmentBuilder()
+										.setFile(
+											path.join(
+												__dirname,
+												"../../assets/images/cats",
+												cat.image
+											)
+										)
+										.setName(`${cat.id}.png`),
+								],
+							});
+						}
+
+						case "select": {
+							if (button.user.id !== slash.user.id) {
+								return button.reply({
+									content: icons.error + translate("NOT_AUTHOR_COMMAND"),
+									ephemeral: true,
+								});
+							}
+
+							const inGame = client.inGame.get(slash.user.id);
+							if (inGame) {
+								const game = client.games.get(inGame);
+								if (!game.starting) {
+									return button.reply({
+										content:
+											icons.error + translate("CANT_SELECT_WHILE_PLAYING"),
+										ephemeral: true,
+									});
+								}
+							}
+
+							if (data.inv.selectedCat === catId) {
+								return button.reply({
+									content: icons.error + translate("ALREADY_SELECTED"),
+									ephemeral: true,
+								});
+							}
+
+							data = await users.set(`${slash.user.id}.inv.selectedCat`, catId);
+							client.emit("newSelectedCat", slash.user, data);
+
+							await slash.editReply({
+								components: components(false),
+							});
+
+							return await button.reply({
+								ephemeral: true,
+								content:
+									icons.success +
+									(catInfo.name
+										? translate(
+												"SELECTED_CAT_NAME",
+												`**${catInfo.name}**`,
+												translate(Cat.name)
+										  )
+										: translate("SELECTED_CAT", `**${translate(Cat.name)}**`)),
+							});
+						}
+					}
+				});
+
+				collector.on("end", async () => {
+					return await slash.editReply({
+						components: components(true),
+					});
+				});
+
+				break;
 			}
 
 			case "rename": {
@@ -496,7 +633,10 @@ module.exports = new Command({
 						ctx.restore();
 					}
 
-					return canvas.toBuffer();
+					const buffer = canvas.toBuffer();
+					stats.add("images.number", 1);
+					stats.add("images.size", buffer.byteLength);
+					return buffer;
 				}
 
 				function components(page = 0, end = false) {
@@ -622,7 +762,12 @@ module.exports = new Command({
 					});
 				}
 
-				await users.set(`${slash.user.id}.inv.selectedCat`, catId);
+				const userData = await users.set(
+					`${slash.user.id}.inv.selectedCat`,
+					catId
+				);
+				client.emit("newSelectedCat", slash.user, userData);
+
 				return slash.reply({
 					content:
 						icons.success +

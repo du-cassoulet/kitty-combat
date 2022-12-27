@@ -45,6 +45,10 @@ module.exports = new Event("interactionCreate", async (interaction) => {
 			.execute(interaction, translate);
 
 		await stats.add(`commands.${interaction.commandName}`, 1);
+		await users.add(`${interaction.user.id}.usages`, 1);
+		logger.feed(
+			`${interaction.user.tag} did the command ${interaction.commandName}`
+		);
 	} else if (interaction.isAutocomplete()) {
 		client.commands
 			.get(interaction.commandName)
@@ -53,6 +57,7 @@ module.exports = new Event("interactionCreate", async (interaction) => {
 		if (interaction.customId === "replay") {
 			battleCommand.execute(interaction, translate);
 			await stats.add("commands.battle", 1);
+			logger.feed(`${interaction.user.tag} restarted a battle`);
 		}
 	}
 });

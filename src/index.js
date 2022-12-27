@@ -9,7 +9,11 @@ const Logger = require("./classes/Logger");
 globalThis.logger = new Logger();
 globalThis.client = new Client();
 globalThis.dev = process.argv.includes("--dev");
-globalThis.db = new QuickDB({ filePath: dev ? "dev.sqlite" : "prod.sqlite" });
+globalThis.db = new QuickDB({
+	filePath: dev
+		? "./src/storage/db/dev.sqlite"
+		: "./src/storage/db/prod.sqlite",
+});
 
 globalThis.icons = {
 	coin: "<:coin:1053355084408430723>",

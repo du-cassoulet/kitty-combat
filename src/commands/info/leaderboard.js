@@ -22,6 +22,7 @@ let diamondIcon = null;
 let coinIcon = null;
 let swordIcon = null;
 let timeIcon = null;
+let catIcon = null;
 
 Canvas.loadImage(
 	path.join(__dirname, "../../assets/images/ranks/wood.png")
@@ -45,6 +46,10 @@ Canvas.loadImage(
 
 Canvas.loadImage(path.join(__dirname, "../../assets/images/time.png")).then(
 	(img) => (timeIcon = img)
+);
+
+Canvas.loadImage(path.join(__dirname, "../../assets/images/soul.png")).then(
+	(img) => (catIcon = img)
 );
 
 Canvas.loadImage(path.join(__dirname, "../../assets/images/sword.png")).then(
@@ -176,6 +181,29 @@ module.exports = new Command({
 					},
 				],
 			},
+			{
+				name: "CATS",
+				description: "PLAYED_DESCRIPTION",
+				type: Discord.ApplicationCommandOptionType.Subcommand,
+				options: [
+					{
+						name: "MODE",
+						description: "MODE_DESCRIPTION",
+						type: Discord.ApplicationCommandOptionType.String,
+						required: true,
+						choices: [
+							{
+								name: "GLOBAL",
+								value: "global",
+							},
+							{
+								name: "SERVER_ONLY",
+								value: "server",
+							},
+						],
+					},
+				],
+			},
 		],
 	},
 	category: Command.Categories.Info,
@@ -202,7 +230,7 @@ module.exports = new Command({
 		let page = 0;
 
 		if (mode === "server") {
-			const guild = await getGuild(slash.guildId);
+			const guild = await getGuild(slash.guild);
 			players = players.filter((p) => guild.players.includes(p.id));
 		}
 
@@ -236,6 +264,17 @@ module.exports = new Command({
 			case "time-played": {
 				players = players.sort(
 					(a, b) => b.value.stats.time - a.value.stats.time
+				);
+				break;
+			}
+
+			case "cats": {
+				players = players.sort(
+					(a, b) =>
+						b.value.inv.cats
+							.map((c) => c.souls || 0)
+							.reduce((a, b) => a + b, 0) -
+						a.value.inv.cats.map((c) => c.souls || 0).reduce((a, b) => a + b, 0)
 				);
 				break;
 			}
@@ -307,6 +346,46 @@ module.exports = new Command({
 				this.stroke();
 			};
 
+			/**
+			 * @param {Canvas.CanvasRenderingContext2D} ctx
+			 * @param {number} x
+			 * @param {number} y
+			 * @param {number} size
+			 */
+			function fillUpArrow(ctx, x, y, w, h) {
+				ctx.beginPath();
+				ctx.moveTo(x + w * 0.5, y);
+				ctx.lineTo(x + w, y + h / 3);
+				ctx.lineTo(x + (w / 3) * 2, y + h / 3);
+				ctx.lineTo(x + (w / 3) * 2, y + h);
+				ctx.lineTo(x + w / 3, y + h);
+				ctx.lineTo(x + w / 3, y + h / 3);
+				ctx.lineTo(x, y + h / 3);
+				ctx.lineTo(x + w * 0.5, y);
+				ctx.closePath();
+				ctx.fill();
+			}
+
+			/**
+			 * @param {Canvas.CanvasRenderingContext2D} ctx
+			 * @param {number} x
+			 * @param {number} y
+			 * @param {number} size
+			 */
+			function fillDownArrow(ctx, x, y, w, h) {
+				ctx.beginPath();
+				ctx.moveTo(x + w * 0.5, y + h);
+				ctx.lineTo(x + w, y + (h / 3) * 2);
+				ctx.lineTo(x + (w / 3) * 2, y + (h / 3) * 2);
+				ctx.lineTo(x + (w / 3) * 2, y);
+				ctx.lineTo(x + w / 3, y);
+				ctx.lineTo(x + w / 3, y + (h / 3) * 2);
+				ctx.lineTo(x, y + (h / 3) * 2);
+				ctx.lineTo(x + w * 0.5, y + h);
+				ctx.closePath();
+				ctx.fill();
+			}
+
 			ctx.fillStyle = "#141517";
 			ctx.fillRoundRect(0, 0, canvas.width, canvas.height, 15);
 
@@ -370,6 +449,18 @@ module.exports = new Command({
 					ctx.fillText(translate("TIME_RANKING"), hs - gap + 8, hs / 2);
 					ctx.drawImage(
 						timeIcon,
+						gap + 12,
+						gap + 8,
+						hs - gap * 2 - 16,
+						hs - gap * 2 - 16
+					);
+					break;
+				}
+
+				case "cats": {
+					ctx.fillText(translate("CATS_RANKING"), hs - gap + 8, hs / 2);
+					ctx.drawImage(
+						catIcon,
 						gap + 12,
 						gap + 8,
 						hs - gap * 2 - 16,
@@ -490,15 +581,51 @@ module.exports = new Command({
 					}
 				}
 
+				const label =
+					(i + page * itemPerPage + 1).toLocaleString(slash.locale) +
+					". " +
+					user.value.tag.split("#")[0];
+
 				ctx.font = "20px SecularOne";
 				ctx.fillStyle = "#fff";
-				ctx.fillText(
-					(i + page * itemPerPage + 1).toLocaleString(slash.locale) +
-						". " +
-						user.value.tag.split("#")[0],
-					gap + ih,
-					hs + gap + 37 + i * (ih + ig)
-				);
+				ctx.fillText(label, gap + ih, hs + gap + 37 + i * (ih + ig));
+
+				if (filter === "elo") {
+					const labelSize = ctx.measureText(label).width;
+					const hist = user.value.hist || [];
+					if (hist.length >= 2) {
+						if (hist[hist.length - 2] < hist[hist.length - 1]) {
+							fillDownArrow(
+								ctx,
+								gap + ih + labelSize + 10,
+								hs + gap + 22 + i * (ih + ig),
+								15,
+								15
+							);
+						}
+						if (hist[hist.length - 2] > hist[hist.length - 1]) {
+							fillUpArrow(
+								ctx,
+								gap + ih + labelSize + 10,
+								hs + gap + 22 + i * (ih + ig),
+								15,
+								15
+							);
+						} else {
+							ctx.fillText(
+								"-",
+								gap + ih + labelSize + 10,
+								hs + gap + 37 + i * (ih + ig)
+							);
+						}
+					} else {
+						ctx.fillText(
+							"-",
+							gap + ih + labelSize + 10,
+							hs + gap + 37 + i * (ih + ig)
+						);
+					}
+				}
 
 				ctx.font = "15px SecularOne";
 				ctx.fillStyle = "#fff8";
@@ -573,13 +700,29 @@ module.exports = new Command({
 						);
 						break;
 					}
+
+					case "cats": {
+						ctx.fillText(
+							"x" +
+								user.value.inv.cats
+									.map((c) => c.souls || 0)
+									.reduce((a, b) => a + b, 0)
+									.toLocaleString(slash.locale),
+							iw - gap,
+							hs + gap + i * (ih + ig) + ih / 2
+						);
+						break;
+					}
 				}
 
 				ctx.strokeRoundRect(gap, hs + gap + i * (ih + ig), iw, ih, 10);
 				ctx.restore();
 			}
 
-			return canvas.toBuffer();
+			const buffer = canvas.toBuffer();
+			stats.add("images.number", 1);
+			stats.add("images.size", buffer.byteLength);
+			return buffer;
 		}
 
 		function components(page = 0, end = false) {
