@@ -9,7 +9,10 @@ const Cats = require("./Cats");
 
 class Client extends Discord.Client {
 	constructor() {
-		const intents = [Discord.IntentsBitField.Flags.Guilds];
+		const intents = [
+			Discord.IntentsBitField.Flags.Guilds,
+			Discord.IntentsBitField.Flags.GuildVoiceStates,
+		];
 
 		super({ intents });
 
@@ -24,6 +27,9 @@ class Client extends Discord.Client {
 
 		/** @type {Discord.Collection<string,Canvas.Image>} */
 		this.catImages = new Discord.Collection();
+
+		/** @type {{channel:Discord.Channel,userId:Discord.User}[]} */
+		this.voiceChannels = [];
 
 		this.embedColor = "#181c25";
 	}
