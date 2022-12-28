@@ -166,6 +166,15 @@ module.exports = new Command({
 			return slash.reply({
 				embeds: [embed],
 				ephemeral: !slash.options,
+				components: [
+					new Discord.ActionRowBuilder().setComponents(
+						new Discord.ButtonBuilder()
+							.setStyle(Discord.ButtonStyle.Link)
+							.setLabel(translate("SUPPORT_SERVER"))
+							.setURL(process.env.SUPPORT_INVITE_URL)
+							.setEmoji("🪩")
+					),
+				],
 			});
 		}
 	},

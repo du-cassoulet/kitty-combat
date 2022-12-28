@@ -19,7 +19,7 @@ class AirCat extends Cat {
 			.setDescription("WING_HIT_DESCRIPTION")
 			.setIcon("1055821684650807356")
 			.setDmg(15, 20)
-			.setCrit(1, 2)
+			.setCrit(10, 2)
 			.setStamina(8);
 
 		this.atk2 = new Cat.Attack()

@@ -35,7 +35,7 @@ class ZeusCat extends Cat {
 				() => (this.opponent?.health || 100) * 0.1
 			)
 			.setTurns(2, [{ value: Cat.Attack.Features.Damages, dim: 0 }])
-			.setStamina(75);
+			.setStamina(40);
 
 		this.def = new Cat.Defence()
 			.setName("TAKE_HEAL")
@@ -44,7 +44,7 @@ class ZeusCat extends Cat {
 				(this.user?.health || 100) - (this.opponent?.health || 100),
 				(this.user?.health || 100) - (this.opponent?.health || 100)
 			)
-			.setStamina(() => 100 - (this.user?.stamina || 100))
+			.setStamina(() => 50 - (this.user?.stamina || 100))
 			.setUsages(1);
 	}
 }

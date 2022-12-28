@@ -6,7 +6,7 @@ const Cat = require("./Cat");
 class GameUser {
 	constructor() {
 		this.health = 100;
-		this.stamina = 100;
+		this.stamina = 50;
 
 		/** @type {Discord.Collection<number,Cat.Turn>} */
 		this.turns = new Discord.Collection();
@@ -60,7 +60,8 @@ class GameUser {
 	 */
 	modStamina(stamina) {
 		this.stamina += Math.round(stamina);
-		if (this.stamina > 100) this.stamina = 100;
+		if (this.stamina > 50) this.stamina = 50;
+		if (this.stamina < 0) this.stamina = 0;
 
 		return this;
 	}

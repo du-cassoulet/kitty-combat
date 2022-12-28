@@ -80,9 +80,9 @@ module.exports = new Command({
 				}
 
 				await users.set(`${slash.user.id}.inv.eggs`, userEggs);
-				await users.sub(
+				await users.set(
 					`${slash.user.id}.inv.coins.current`,
-					egg.price * amount
+					data.inv.coins.current - egg.price * amount
 				);
 
 				return slash.reply({

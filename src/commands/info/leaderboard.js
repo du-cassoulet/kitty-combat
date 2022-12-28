@@ -594,7 +594,7 @@ module.exports = new Command({
 					const labelSize = ctx.measureText(label).width;
 					const hist = user.value.hist || [];
 					if (hist.length >= 2) {
-						if (hist[hist.length - 2] < hist[hist.length - 1]) {
+						if (hist[hist.length - 2] > hist[hist.length - 1]) {
 							fillDownArrow(
 								ctx,
 								gap + ih + labelSize + 10,
@@ -602,8 +602,7 @@ module.exports = new Command({
 								15,
 								15
 							);
-						}
-						if (hist[hist.length - 2] > hist[hist.length - 1]) {
+						} else if (hist[hist.length - 2] < hist[hist.length - 1]) {
 							fillUpArrow(
 								ctx,
 								gap + ih + labelSize + 10,

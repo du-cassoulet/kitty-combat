@@ -18,9 +18,9 @@ class CowboyCat extends Cat {
 			.setName("BANG")
 			.setDescription("BANG_DESCRIPTION")
 			.setIcon("🔫")
-			.setDmg(1, 5)
+			.setDmg(2, 4)
 			.setCrit(50, 10)
-			.setUsages(1)
+			.setUsages(2)
 			.setStamina(25);
 	}
 }

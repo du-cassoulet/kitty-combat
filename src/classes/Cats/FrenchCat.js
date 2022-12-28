@@ -19,8 +19,7 @@ class FrenchCat extends Cat {
 			.setDescription("BAGUETTE_HIT_DESCRIPTION")
 			.setIcon("🥖")
 			.setDmg(1, 1)
-			.setCrit(1, 100)
-			.setUsages(5)
+			.setCrit(7, 100)
 			.setStamina(8);
 	}
 }

@@ -4,6 +4,7 @@ const getStats = require("../../functions/getStats");
 const humanizeDuration = require("humanize-duration");
 const byteSize = require("byte-size");
 const Stats = require("../../classes/Stats");
+const { version } = require("../../../package.json");
 
 /**
  * @param {Stats} botStats
@@ -48,9 +49,9 @@ function getUptime(botStats) {
 	];
 
 	function getVal(n) {
-		if (n > 75) return { i: 0, n };
-		if (n > 50) return { i: 1, n };
-		if (n > 25) return { i: 2, n };
+		if (n > 50) return { i: 0, n };
+		if (n > 35) return { i: 1, n };
+		if (n > 15) return { i: 2, n };
 		if (n > 0) return { i: 3, n };
 		return { i: 4, n };
 	}
@@ -74,7 +75,11 @@ function getUptime(botStats) {
 	for (let i = botStats.uptime.lastHour + 1; i < 24; i++) addHour(i);
 	for (let i = 0; i < botStats.uptime.lastHour; i++) addHour(i);
 
-	const val = { i: 0, n: botStats.uptime[botStats.uptime.lastHour] || 0 };
+	const val = getVal(
+		(botStats.uptime[botStats.uptime.lastHour] / new Date().getMinutes()) *
+			60 || 0
+	);
+
 	sum += val.n;
 	str += emojis[last.i][val.i];
 
@@ -122,6 +127,7 @@ module.exports = new Command({
 			.setThumbnail(client.user.displayAvatarURL({ size: 512 }))
 			.setTitle("🛈 " + translate("BOT_INFO", client.user.username))
 			.setURL("https://discord.com/users/" + client.user.id)
+			.setFooter({ text: translate("VERSION", version) })
 			.setDescription(
 				translate(
 					"BOT_STATS",

@@ -18,7 +18,7 @@ class FatCat extends Cat {
 			.setName("SQUEEZE")
 			.setDescription("SQUEEZE_DESCRIPTION")
 			.setIcon("🔨")
-			.setDmg(30, 45)
+			.setDmg(20, 45)
 			.setCrit(30, 0)
 			.setUsages(2)
 			.setStamina(12);

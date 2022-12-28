@@ -90,6 +90,9 @@ module.exports = new Command({
 		const Cat = rarityCats[Math.floor(Math.random() * rarityCats.length)];
 		const cat = new Cat();
 
+		userEggIDs.splice(userEggIDs.indexOf(eggId), 1);
+		await users.set(`${slash.user.id}.inv.eggs`, userEggIDs);
+
 		return setTimeout(async () => {
 			data = await getUser(slash.user);
 			const embed = new Discord.EmbedBuilder()
@@ -97,10 +100,7 @@ module.exports = new Command({
 				.setThumbnail(`attachment://${cat.id}.png`)
 				.setTitle(translate("EGG_HATCHED"));
 
-			userEggIDs.splice(userEggIDs.indexOf(eggId), 1);
-			await users.set(`${slash.user.id}.inv.eggs`, userEggIDs);
 			await users.add(`${slash.user.id}.inv.eggsOpened`, 1);
-
 			const userCats = data.inv.cats;
 			const userCat = User.Cat.form(userCats.find((c) => c.catId === cat.id));
 

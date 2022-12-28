@@ -18,7 +18,7 @@ class AlienCat extends Cat {
 			.setName("LASER_EYES")
 			.setDescription("LASER_EYES_DESCRIPTION")
 			.setIcon("👀")
-			.setDmg(30, 40)
+			.setDmg(25, 35)
 			.setUsages(2)
 			.setStamina(20);
 	}

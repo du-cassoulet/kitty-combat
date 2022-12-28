@@ -50,4 +50,8 @@ Canvas.registerFont(path.join(__dirname, "./assets/fonts/Anton.ttf"), {
 	family: "Anton",
 });
 
-client.start(process.env.TOKEN);
+client.start(dev ? process.env.DEV_TOKEN : process.env.TOKEN);
+
+process.on("unhandledRejection", console.log);
+process.on("uncaughtException", console.log);
+process.on("uncaughtExceptionMonitor", console.log);
