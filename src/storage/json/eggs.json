@@ -16,5 +16,14 @@
 		"price": 15000,
 		"rarities": [30, 65, 5],
 		"openTime": 60000
+	},
+	{
+		"name": "HEROIC_EGG",
+		"id": "heroic_egg",
+		"description": "GET_LEG_CATS",
+		"image": "./ominous.png",
+		"price": 35000,
+		"rarities": [0, 85, 15],
+		"openTime": 120000
 	}
 ]

@@ -1,13 +1,7 @@
 const Discord = require("discord.js");
 const Event = require("../classes/Event");
-const Guild = require("../classes/Guild");
 
-module.exports = new Event("guildCreate", async (guild) => {
-	if (!(await guilds.has(guild.id))) {
-		await guilds.set(guild.id, new Guild());
-		logger.db(`The guild ${guild.name} was registered to the database.`);
-	}
-
+module.exports = new Event("guildDelete", async (guild) => {
 	if (client.shard) {
 		const numbers = await client.shard.fetchClientValues("guilds.cache.size");
 		var guildNumber = numbers.reduce((a, b) => a + b, 0);
@@ -79,9 +73,9 @@ module.exports = new Event("guildCreate", async (guild) => {
 	];
 
 	const embed = new Discord.EmbedBuilder()
-		.setColor("#30e36c")
+		.setColor("#e33030")
 		.setThumbnail(guild.iconURL())
-		.setTitle("Joined " + guild.name)
+		.setTitle("Left " + guild.name)
 		.addFields(fields)
 		.setFooter({ text: "Server number #" + guildNumber.toLocaleString() });
 

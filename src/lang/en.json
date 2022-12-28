@@ -313,5 +313,12 @@
 	"TIME_PLAYED": "Time played: %s.",
 	"IMAGES_GENERATED": "%s images generated.",
 	"IMAGES_UPLOADED": "%s of images uploaded.",
-	"MOST_COMMANDS_USER": "Most active users"
+	"MOST_COMMANDS_USER": "Most active users",
+	"DELETE": "delete",
+	"ACCOUNT": "account",
+	"DELETE_DESCRIPTION": "To delete your account.",
+	"WANT_DELETE": "Are you sure that you want to delete your account ?",
+	"DELETED_ACCOUNT": "You successfully left the adventure, i hope i'll see you again...",
+	"HEROIC_EGG": "Heroic egg",
+	"GET_LEG_CATS": "Get a rare or legendary cat."
 }

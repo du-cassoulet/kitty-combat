@@ -113,7 +113,12 @@ module.exports = new Command({
 			}
 
 			client.commands.forEach((command) => {
-				if (command.category.name === "HIDDEN_CATEGORY_NAME") return;
+				if (
+					command.options.guildId &&
+					command.options.guildId !== slash.guildId
+				) {
+					return;
+				}
 
 				if (!descriptions[command.category.name]) {
 					descriptions[command.category.name] = translate(
