@@ -206,6 +206,7 @@ module.exports = new Command({
 					value: allUsers
 						.filter((u) => u.value.usages)
 						.sort((a, b) => b.value.usages - a.value.usages)
+						.slice(0, 5)
 						.map(
 							({ value: v }, i) =>
 								`> ${i + 1}. **${v.tag}** (${v.usages.toLocaleString(

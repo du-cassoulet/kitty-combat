@@ -322,5 +322,7 @@
 	"HEROIC_EGG": "Heroic egg",
 	"GET_LEG_CATS": "Get a rare or legendary cat.",
 	"VERSION": "Version %s",
-	"SUPPORT_SERVER": "Official server"
+	"SUPPORT_SERVER": "Official server",
+	"PLAY_BOT": "Play against a bot",
+	"NO_STATS": "Your opponent will not recieve any progression because it is a bot."
 }

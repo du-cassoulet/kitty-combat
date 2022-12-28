@@ -152,6 +152,7 @@ module.exports = new Command({
 			});
 
 		let leaveMode = false;
+		let botMode = false;
 		function components(disabled) {
 			return leaveMode
 				? [
@@ -161,7 +162,13 @@ module.exports = new Command({
 								.setLabel(translate("LEAVE"))
 								.setStyle(Discord.ButtonStyle.Danger)
 								.setEmoji("1054701587970400366")
-								.setDisabled(disabled)
+								.setDisabled(disabled),
+							new Discord.ButtonBuilder()
+								.setCustomId("add-bot")
+								.setLabel(translate("PLAY_BOT"))
+								.setStyle(Discord.ButtonStyle.Secondary)
+								.setEmoji("1057752385751089242")
+								.setDisabled(true)
 						),
 				  ]
 				: [
@@ -171,7 +178,13 @@ module.exports = new Command({
 								.setLabel(translate("JOIN"))
 								.setStyle(Discord.ButtonStyle.Primary)
 								.setEmoji("1054360032524906576")
-								.setDisabled(disabled)
+								.setDisabled(disabled || botMode),
+							new Discord.ButtonBuilder()
+								.setCustomId("add-bot")
+								.setLabel(translate("PLAY_BOT"))
+								.setStyle(Discord.ButtonStyle.Secondary)
+								.setEmoji("1057752385751089242")
+								.setDisabled(disabled || botMode)
 						),
 				  ];
 		}
@@ -218,7 +231,7 @@ module.exports = new Command({
 
 			ctx.globalAlpha = 1;
 			ctx.drawImage(lightning, side - 40, 0, 80, side + 100);
-			ctx.drawImage(versusIcon, side / 2, side - 190, side, 190);
+			ctx.drawImage(versusIcon, side - 160, side / 2 - 150, 320, 300);
 
 			const buffer = canvas.toBuffer();
 			stats.add("images.number", 1);
@@ -345,110 +358,159 @@ module.exports = new Command({
 				});
 			}
 
-			if (button.customId === "join") {
-				if (!opponentData.inv.selectedCat) {
-					return button.reply({
-						content: icons.error + translate("NEED_CAT_JOIN"),
-						ephemeral: true,
-					});
+			switch (button.customId) {
+				case "join": {
+					if (!opponentData.inv.selectedCat) {
+						return button.reply({
+							content: icons.error + translate("NEED_CAT_JOIN"),
+							ephemeral: true,
+						});
+					}
+
+					if (game.hostId === button.user.id) {
+						return button.reply({
+							content: icons.error + translate("ALREADY_HOST"),
+							ephemeral: true,
+						});
+					}
+
+					if (game.players.has(button.user.id)) {
+						return button.reply({
+							content: icons.error + translate("ALREADY_IN_THIS_GAME"),
+							ephemeral: true,
+						});
+					}
+
+					if (client.inGame.has(button.user.id)) {
+						return button.reply({
+							content: icons.error + translate("ALREADY_IN_GAME"),
+							ephemeral: true,
+						});
+					}
+
+					if (game.players.size >= 2) {
+						return button.reply({
+							content: icons.error + translate("ALREADY_TWO"),
+							ephemeral: true,
+						});
+					}
+
+					if (leaves[button.user.id] >= 3) {
+						return button.reply({
+							content: ":dotted_line_face: " + translate("LEFT_3_TIMES"),
+							ephemeral: true,
+						});
+					}
+
+					await game.addPlayer(button.user);
+					player2 = game.players.at(1);
+					player2.data = await getUser(button.user);
+					const Cat2 = Cats[player2.data.inv.selectedCat];
+					cat2 = new Cat2();
+
+					embed.data.fields[0].value = players();
+					embed.data.description =
+						"*" +
+						translate(
+							"STARTING_IN",
+							`<t:${Math.round((Date.now() + START_TIME) / 1000)}:R>`
+						) +
+						"*" +
+						"\n\n" +
+						translate("DO_CAT_SELECT", getCommand("cat select")) +
+						"\n\n⚠️ " +
+						translate("TIME_TO_PLAY");
+
+					leaveMode = true;
+					timeout = setTimeout(async () => {
+						game.start();
+						collector.stop();
+						playGame({ player1, cat1 }, { player2, cat2 });
+					}, START_TIME);
+
+					break;
 				}
 
-				if (game.hostId === button.user.id) {
-					return button.reply({
-						content: icons.error + translate("ALREADY_HOST"),
-						ephemeral: true,
-					});
+				case "add-bot": {
+					if (game.players.size >= 2) {
+						return button.reply({
+							content: icons.error + translate("ALREADY_TWO"),
+							ephemeral: true,
+						});
+					}
+
+					await game.addPlayer(client.user);
+					player2 = game.players.at(1);
+					const cats = Object.values(Cats);
+					const Cat2 = cats[Math.floor(Math.random() * cats.length)];
+					cat2 = new Cat2();
+
+					embed.data.fields[0].value = players();
+					embed.data.description =
+						"*" +
+						translate(
+							"STARTING_IN",
+							`<t:${Math.round((Date.now() + START_TIME) / 1000)}:R>`
+						) +
+						"*" +
+						"\n\n" +
+						translate("DO_CAT_SELECT", getCommand("cat select")) +
+						"\n\n⚠️ " +
+						translate("TIME_TO_PLAY");
+
+					botMode = true;
+					timeout = setTimeout(async () => {
+						game.start();
+						collector.stop();
+						playGame({ player1, cat1 }, { player2, cat2 });
+					}, START_TIME);
+
+					break;
 				}
 
-				if (game.players.has(button.user.id)) {
-					return button.reply({
-						content: icons.error + translate("ALREADY_IN_THIS_GAME"),
-						ephemeral: true,
-					});
+				case "leave": {
+					if (game.hostId === button.user.id) {
+						await button.deferUpdate();
+						return await stopLobby(game.hostId, button.user);
+					}
+
+					if (!game.players.has(button.user.id)) {
+						return button.reply({
+							content: icons.error + translate("NOT_IN_THIS_GAME"),
+							ephemeral: true,
+						});
+					}
+
+					player2 = null;
+					cat2 = null;
+
+					game.removePlayer(button.user.id);
+					if (timeout) clearTimeout(timeout);
+					embed.data.fields[0].value = players();
+					embed.data.description =
+						icons.loading +
+						"*" +
+						translate("QUEUED") +
+						"*" +
+						"\n\n" +
+						translate("DO_CAT_SELECT", getCommand("cat select")) +
+						"\n\n⚠️ " +
+						translate("TIME_TO_PLAY");
+
+					leaveMode = false;
+					if (!leaves[button.user.id]) {
+						leaves[button.user.id] = 1;
+					} else {
+						leaves[button.user.id]++;
+					}
+
+					break;
 				}
 
-				if (client.inGame.has(button.user.id)) {
-					return button.reply({
-						content: icons.error + translate("ALREADY_IN_GAME"),
-						ephemeral: true,
-					});
+				default: {
+					return;
 				}
-
-				if (game.players.size >= 2) {
-					return button.reply({
-						content: icons.error + translate("ALREADY_TWO"),
-						ephemeral: true,
-					});
-				}
-
-				if (leaves[button.user.id] >= 3) {
-					return button.reply({
-						content: ":dotted_line_face: " + translate("LEFT_3_TIMES"),
-						ephemeral: true,
-					});
-				}
-
-				await game.addPlayer(button.user);
-				player2 = game.players.at(1);
-				player2.data = await getUser(button.user);
-				const Cat2 = Cats[player2.data.inv.selectedCat];
-				cat2 = new Cat2();
-
-				embed.data.fields[0].value = players();
-				embed.data.description =
-					"*" +
-					translate(
-						"STARTING_IN",
-						`<t:${Math.round((Date.now() + START_TIME) / 1000)}:R>`
-					) +
-					"*" +
-					"\n\n" +
-					translate("DO_CAT_SELECT", getCommand("cat select")) +
-					"\n\n⚠️ " +
-					translate("TIME_TO_PLAY");
-
-				leaveMode = true;
-				timeout = setTimeout(async () => {
-					game.start();
-					collector.stop();
-					playGame({ player1, cat1 }, { player2, cat2 });
-				}, START_TIME);
-			} else if (button.customId === "leave") {
-				if (game.hostId === button.user.id) {
-					await button.deferUpdate();
-					return await stopLobby(game.hostId, button.user);
-				}
-
-				if (!game.players.has(button.user.id)) {
-					return button.reply({
-						content: icons.error + translate("NOT_IN_THIS_GAME"),
-						ephemeral: true,
-					});
-				}
-
-				player2 = null;
-				cat2 = null;
-
-				game.removePlayer(button.user.id);
-				if (timeout) clearTimeout(timeout);
-				embed.data.fields[0].value = players();
-				embed.data.description =
-					icons.loading +
-					"*" +
-					translate("QUEUED") +
-					"*" +
-					"\n\n" +
-					translate("DO_CAT_SELECT", getCommand("cat select")) +
-					"\n\n⚠️ " +
-					translate("TIME_TO_PLAY");
-
-				leaveMode = false;
-				if (!leaves[button.user.id]) {
-					leaves[button.user.id] = 1;
-				} else {
-					leaves[button.user.id]++;
-				}
-			} else return;
+			}
 
 			button.deferUpdate();
 			slash.editReply({
@@ -472,9 +534,20 @@ module.exports = new Command({
 			client.removeListener("newSelectedCat", updateCats);
 			if (!game.starting) return;
 
+			embed.data.description =
+				icons.loading +
+				"*" +
+				translate("GAME_CANCELLED") +
+				"*" +
+				"\n\n" +
+				translate("DO_CAT_SELECT", getCommand("cat select")) +
+				"\n\n" +
+				translate("TIME_TO_PLAY");
 			game.delete();
+
 			if (slash.isRepliable()) {
 				slash.editReply({
+					embeds: [embed],
 					components: components(true),
 				});
 			}
@@ -710,91 +783,104 @@ module.exports = new Command({
 				collector.stop();
 
 				const endTime = Date.now();
-				const winExp = addExp(winner.data.leveling, true, User.Leveling.Range);
-				const losExp = addExp(loser.data.leveling, false, User.Leveling.Range);
-
-				winner.data.leveling = winExp.leveling;
-				loser.data.leveling = losExp.leveling;
-
-				const winnerCat = winner.data.inv.cats.find(
-					(c) => c.catId === winner.data.inv.selectedCat
-				);
-				const loserCat = loser.data.inv.cats.find(
-					(c) => c.catId === loser.data.inv.selectedCat
-				);
-
-				winnerCat.damages = addExp(
-					winnerCat.damages,
-					true,
-					User.Cat.Leveling.Range
-				).leveling;
-
-				winnerCat.defence = addExp(
-					winnerCat.defence,
-					true,
-					User.Cat.Leveling.Range
-				).leveling;
-
-				loserCat.damages = addExp(
-					loserCat.damages,
-					false,
-					User.Cat.Leveling.Range
-				).leveling;
-
-				loserCat.defence = addExp(
-					loserCat.defence,
-					false,
-					User.Cat.Leveling.Range
-				).leveling;
-
-				const winCoins = Math.floor(Math.random() * 501) + 500;
-				const losCoins = Math.floor(Math.random() * 251) + 250;
-				winner.data.inv.coins.current += winCoins;
-				loser.data.inv.coins.current += losCoins;
-
-				if (winner.data.inv.coins.current > winner.data.inv.coins.highest) {
-					winner.data.inv.coins.highest = winner.data.inv.coins.current;
-				}
-				if (loser.data.inv.coins.current > loser.data.inv.coins.highest) {
-					loser.data.inv.coins.highest = loser.data.inv.coins.current;
-				}
-
-				winner.data.stats.wins++;
-				winner.data.stats.winstreak.current++;
-				winner.data.stats.time += endTime - start;
-				loser.data.stats.losses++;
-				loser.data.stats.winstreak.current = 0;
-				loser.data.stats.time += endTime - start;
-
-				if (
-					winner.data.stats.winstreak.current >
-					winner.data.stats.winstreak.highest
-				) {
-					winner.data.stats.winstreak.highest =
-						winner.data.stats.winstreak.current;
-				}
-
-				const oldWinElo = winner.data.elo;
-				const oldLosElo = loser.data.elo;
-				const expectedW = elo.getExpected(winner.data.elo, loser.data.elo);
-				const expectedL = elo.getExpected(loser.data.elo, winner.data.elo);
-				winner.data.elo = elo.updateRating(expectedW, 1, winner.data.elo);
-				loser.data.elo = elo.updateRating(expectedL, 0, loser.data.elo);
-
-				winner.data.hist.push(winner.data.elo);
-				loser.data.hist.push(loser.data.elo);
-
-				await users.set(winner.user.id, winner.data);
-				await users.set(loser.user.id, loser.data);
-
 				const allUsers = (await users.all()).sort(
 					(a, b) => b.value.elo - a.value.elo
 				);
 
-				const winnerRank = allUsers.findIndex((u) => u.id === winner.user.id);
-				const loserRank = allUsers.findIndex((u) => u.id === loser.user.id);
-				await users.set(`${winner.user.id}.stats.rank`, winnerRank);
-				await users.set(`${loser.user.id}.stats.rank`, loserRank);
+				if (winner.user.id !== client.user.id) {
+					var winExp = addExp(winner.data.leveling, true, User.Leveling.Range);
+					winner.data.leveling = winExp.leveling;
+
+					const winnerCat = winner.data.inv.cats.find(
+						(c) => c.catId === winner.data.inv.selectedCat
+					);
+
+					winnerCat.damages = addExp(
+						winnerCat.damages,
+						true,
+						User.Cat.Leveling.Range
+					).leveling;
+
+					winnerCat.defence = addExp(
+						winnerCat.defence,
+						true,
+						User.Cat.Leveling.Range
+					).leveling;
+
+					var winCoins = Math.floor(Math.random() * 501) + 500;
+					winner.data.inv.coins.current += winCoins;
+
+					if (winner.data.inv.coins.current > winner.data.inv.coins.highest) {
+						winner.data.inv.coins.highest = winner.data.inv.coins.current;
+					}
+
+					winner.data.stats.wins++;
+					winner.data.stats.winstreak.current++;
+					winner.data.stats.time += endTime - start;
+
+					if (
+						winner.data.stats.winstreak.current >
+						winner.data.stats.winstreak.highest
+					) {
+						winner.data.stats.winstreak.highest =
+							winner.data.stats.winstreak.current;
+					}
+
+					var oldWinElo = winner.data.elo;
+					const expectedW = elo.getExpected(
+						winner.data.elo,
+						loser.data?.elo || 1000
+					);
+					winner.data.elo = elo.updateRating(expectedW, 1, winner.data.elo);
+					winner.data.hist.push(winner.data.elo);
+					await users.set(winner.user.id, winner.data);
+
+					var winnerRank = allUsers.findIndex((u) => u.id === winner.user.id);
+					await users.set(`${winner.user.id}.stats.rank`, winnerRank);
+				}
+
+				if (loser.user.id !== client.user.id) {
+					var losExp = addExp(loser.data.leveling, false, User.Leveling.Range);
+					loser.data.leveling = losExp.leveling;
+
+					const loserCat = loser.data.inv.cats.find(
+						(c) => c.catId === loser.data.inv.selectedCat
+					);
+
+					loserCat.damages = addExp(
+						loserCat.damages,
+						false,
+						User.Cat.Leveling.Range
+					).leveling;
+
+					loserCat.defence = addExp(
+						loserCat.defence,
+						false,
+						User.Cat.Leveling.Range
+					).leveling;
+
+					var losCoins = Math.floor(Math.random() * 251) + 250;
+					loser.data.inv.coins.current += losCoins;
+					if (loser.data.inv.coins.current > loser.data.inv.coins.highest) {
+						loser.data.inv.coins.highest = loser.data.inv.coins.current;
+					}
+
+					loser.data.stats.losses++;
+					loser.data.stats.winstreak.current = 0;
+					loser.data.stats.time += endTime - start;
+
+					var oldLosElo = loser.data.elo;
+					const expectedL = elo.getExpected(
+						loser.data.elo,
+						winner.data?.elo || 1000
+					);
+					loser.data.elo = elo.updateRating(expectedL, 0, loser.data.elo);
+					loser.data.hist.push(loser.data.elo);
+					await users.set(loser.user.id, loser.data);
+
+					var loserRank = allUsers.findIndex((u) => u.id === loser.user.id);
+					await users.set(`${loser.user.id}.stats.rank`, loserRank);
+				}
 
 				if (slash.isRepliable()) {
 					await slash.editReply({
@@ -839,36 +925,42 @@ module.exports = new Command({
 										value:
 											`[${winner.user.tag}](https://discord.com/users/${winner.user.id})` +
 											"\n\n" +
-											translate(
-												"RANK",
-												`${
-													winnerRank - winner.data.stats.rank === 0 ? "-" : "↑"
-												} **#${(winnerRank + 1).toLocaleString(
-													slash.locale
-												)}** / ${allUsers.length.toLocaleString(
-													slash.locale
-												)} *(+${(
-													winner.data.stats.rank - winnerRank
-												).toLocaleString(slash.locale)})*`
-											) +
-											"\n" +
-											`${
-												getRank(winner.data.elo).emoji
-											} ${winner.data.elo.toLocaleString(
-												slash.locale
-											)} Elo *(+${(winner.data.elo - oldWinElo).toLocaleString(
-												slash.locale
-											)})*` +
-											"\n" +
-											`${icons.coin} +${winCoins.toLocaleString(
-												slash.locale
-											)}` +
-											"\n" +
-											`${icons.exp} +${winExp.xp.toLocaleString(
-												slash.locale
-											)}xp${
-												winExp.newLevel ? ` *(${translate("ONE_LEVEL")})*` : ""
-											}`,
+											(winner.user.id === client.user.id
+												? translate("NO_STATS")
+												: translate(
+														"RANK",
+														`${
+															winnerRank - winner.data.stats.rank === 0
+																? "-"
+																: "↑"
+														} **#${(winnerRank + 1).toLocaleString(
+															slash.locale
+														)}** / ${allUsers.length.toLocaleString(
+															slash.locale
+														)} *(+${(
+															winner.data.stats.rank - winnerRank
+														).toLocaleString(slash.locale)})*`
+												  ) +
+												  "\n" +
+												  `${
+														getRank(winner.data.elo).emoji
+												  } ${winner.data.elo.toLocaleString(
+														slash.locale
+												  )} Elo *(+${(
+														winner.data.elo - oldWinElo
+												  ).toLocaleString(slash.locale)})*` +
+												  "\n" +
+												  `${icons.coin} +${winCoins.toLocaleString(
+														slash.locale
+												  )}` +
+												  "\n" +
+												  `${icons.exp} +${winExp.xp.toLocaleString(
+														slash.locale
+												  )}xp${
+														winExp.newLevel
+															? ` *(${translate("ONE_LEVEL")})*`
+															: ""
+												  }`),
 										inline: true,
 									},
 									{
@@ -878,36 +970,42 @@ module.exports = new Command({
 										value:
 											`<:N_:718506491660992735>[${loser.user.tag}](https://discord.com/users/${loser.user.id})` +
 											"\n\n> " +
-											translate(
-												"RANK",
-												`${
-													loserRank - loser.data.stats.rank === 0 ? "-" : "↓"
-												} **#${(loserRank + 1).toLocaleString(
-													slash.locale
-												)}** / ${allUsers.length.toLocaleString(
-													slash.locale
-												)} *(-${(
-													loserRank - loser.data.stats.rank
-												).toLocaleString(slash.locale)}*)`
-											) +
-											"\n> " +
-											`${
-												getRank(loser.data.elo).emoji
-											} ${loser.data.elo.toLocaleString(
-												slash.locale
-											)} Elo *(-${(oldLosElo - loser.data.elo).toLocaleString(
-												slash.locale
-											)})*` +
-											"\n> " +
-											`${icons.coin} +${losCoins.toLocaleString(
-												slash.locale
-											)}` +
-											"\n> " +
-											`${icons.exp} +${losExp.xp.toLocaleString(
-												slash.locale
-											)}xp${
-												losExp.newLevel ? ` *(${translate("ONE_LEVEL")})*` : ""
-											}`,
+											(loser.user.id === client.user.id
+												? translate("NO_STATS")
+												: translate(
+														"RANK",
+														`${
+															loserRank - loser.data.stats.rank === 0
+																? "-"
+																: "↓"
+														} **#${(loserRank + 1).toLocaleString(
+															slash.locale
+														)}** / ${allUsers.length.toLocaleString(
+															slash.locale
+														)} *(-${(
+															loserRank - loser.data.stats.rank
+														).toLocaleString(slash.locale)}*)`
+												  ) +
+												  "\n> " +
+												  `${
+														getRank(loser.data.elo).emoji
+												  } ${loser.data.elo.toLocaleString(
+														slash.locale
+												  )} Elo *(-${(
+														oldLosElo - loser.data.elo
+												  ).toLocaleString(slash.locale)})*` +
+												  "\n> " +
+												  `${icons.coin} +${losCoins.toLocaleString(
+														slash.locale
+												  )}` +
+												  "\n> " +
+												  `${icons.exp} +${losExp.xp.toLocaleString(
+														slash.locale
+												  )}xp${
+														losExp.newLevel
+															? ` *(${translate("ONE_LEVEL")})*`
+															: ""
+												  }`),
 										inline: true,
 									}
 								),
@@ -1024,38 +1122,124 @@ module.exports = new Command({
 					hostTurn ? player2 : player1,
 				];
 
-				const loser = playerOrder.find((p) => p.game.health <= 0);
-				if (loser) {
-					const winner = playerOrder.find((p) => loser.user.id !== p.user.id);
-					return await endGame(winner, loser);
-				} else {
-					await slash.editReply({
-						components: components(true),
-						embeds: [
-							await embed(true, {
-								absPer,
-								boost,
-								critical,
-								dmg,
-								dodged,
-								heal,
-								protDmg,
-								stamina,
-							}),
-						],
-					});
+				await slash.editReply({
+					components: components(true),
+					embeds: [
+						await embed(true, {
+							absPer,
+							boost,
+							critical,
+							dmg,
+							dodged,
+							heal,
+							protDmg,
+							stamina,
+						}),
+					],
+				});
 
-					hostTurn = !hostTurn;
-					if (hostTurn) turn++;
+				return setTimeout(async () => {
+					if (end) return;
+					const loser = playerOrder.find((p) => p.game.health <= 0);
+					if (loser) {
+						const winner = playerOrder.find((p) => loser.user.id !== p.user.id);
+						return await endGame(winner, loser);
+					} else {
+						hostTurn = !hostTurn;
+						if (hostTurn) turn++;
 
-					setTimeout(async () => {
-						return await slash.editReply({
+						await slash.editReply({
 							components: components(false),
 							embeds: [await embed(false)],
 							files: files(),
 						});
-					}, 2000);
-				}
+
+						if (!hostTurn && player2.user.id === client.user.id) {
+							return setTimeout(async () => {
+								if (end) return;
+
+								let dmg = 0,
+									protDmg = 0,
+									heal = 0,
+									stamina = 0,
+									absPer = 0,
+									boost = false,
+									dodged = false,
+									critical = false;
+
+								const act = Math.floor(Math.random() * 6);
+								if (act < 2 && cat2.def.usages !== 0) {
+									const defence = cat2.doDefence(turn);
+									heal = defence.def.heal;
+									boost = defence.def.boost;
+									stamina = defence.def.stamina;
+								} else if (
+									act === 2 &&
+									cat2.atk2.usages !== 0 &&
+									cat2.atk2.stamina <= player2.game.stamina
+								) {
+									const attack = cat2.doAttack2(turn);
+									dmg = -attack.atk.dmg;
+									critical = attack.atk.critical;
+									heal = attack.atk.heal;
+									protDmg = attack.prot.dmg;
+									dodged = attack.prot.dodged;
+									absPer = attack.prot.absPer;
+									stamina = -attack.stamina;
+								} else if (
+									cat2.atk1.usages !== 0 &&
+									cat2.atk1.stamina <= player2.game.stamina
+								) {
+									const attack = cat2.doAttack1(turn);
+									dmg = -attack.atk.dmg;
+									critical = attack.atk.critical;
+									heal = attack.atk.heal;
+									protDmg = attack.prot.dmg;
+									dodged = attack.prot.dodged;
+									absPer = attack.prot.absPer;
+									stamina = -attack.stamina;
+								} else {
+									const defence = cat2.doDefence(turn);
+									heal = defence.def.heal;
+									boost = defence.def.boost;
+									stamina = defence.def.stamina;
+								}
+
+								await slash.editReply({
+									components: components(true),
+									embeds: [
+										await embed(true, {
+											absPer,
+											boost,
+											critical,
+											dmg,
+											dodged,
+											heal,
+											protDmg,
+											stamina,
+										}),
+									],
+								});
+
+								setTimeout(async () => {
+									if (end) return;
+									hostTurn = !hostTurn;
+									return await slash.editReply({
+										components: components(false),
+										embeds: [await embed(false)],
+										files: files(),
+									});
+								}, 2000);
+							}, Math.floor(Math.random() * 2000) + 2000);
+						} else {
+							return await slash.editReply({
+								components: components(false),
+								embeds: [await embed(false)],
+								files: files(),
+							});
+						}
+					}
+				}, 2000);
 			});
 
 			collector.on("end", async () => {

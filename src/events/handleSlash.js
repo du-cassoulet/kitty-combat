@@ -57,6 +57,7 @@ module.exports = new Event("interactionCreate", async (interaction) => {
 		if (interaction.customId === "replay") {
 			battleCommand.execute(interaction, translate);
 			await stats.add("commands.battle", 1);
+			await users.add(`${interaction.user.id}.usages`, 1);
 			logger.feed(`${interaction.user.tag} restarted a battle`);
 		}
 	}
