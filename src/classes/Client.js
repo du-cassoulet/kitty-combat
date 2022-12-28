@@ -54,9 +54,9 @@ class Client extends Discord.Client {
 			/** @type {import("./Event")} */
 			const event = require(path.join(__dirname, "../events", file));
 			this.on(event.name, event.execute);
-
-			logger.log(`Event ${event.name} loaded.`);
 		}
+
+		logger.log(`${files.length} events loaded.`);
 	}
 
 	#commandHandler(mainPath = path.join(__dirname, "../commands")) {
@@ -71,8 +71,11 @@ class Client extends Discord.Client {
 				const commandName = translate("en", command.options.name);
 
 				this.commands.set(commandName, command);
-				logger.log(`Command ${commandName} loaded.`);
 			}
+		}
+
+		if (mainPath === path.join(__dirname, "../commands")) {
+			logger.log(`${this.commands.size} commands loaded.`);
 		}
 	}
 

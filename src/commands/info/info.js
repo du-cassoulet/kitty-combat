@@ -55,30 +55,28 @@ function getUptime(botStats) {
 		return { i: 4, n };
 	}
 
+	let last = null;
 	let str = "";
 	let sum = 0;
-	for (let i = 0; i < 12; i++) {
-		let [a, b] = [
-			{ i: 0, n: botStats.uptime[(i * 2) % 24] },
-			{ i: 0, n: botStats.uptime[(i * 2 + 1) % 24] },
-		];
 
-		if (botStats.uptime.lastHour !== i * 2) {
-			a = getVal(botStats.uptime[(i * 2) % 24] || 0);
-		}
-
-		if (botStats.uptime.lastHour !== i * 2 + 1) {
-			b = getVal(botStats.uptime[(i * 2 + 1) % 24] || 0);
-		}
-
-		sum += a.n;
-		sum += b.n;
-		if (botStats.uptime.lastHour > i * 2) {
-			str += emojis[a.i][b.i];
+	function addHour(h) {
+		if (!last) {
+			last = getVal(botStats.uptime[h] || 0);
+			sum += last.n;
 		} else {
-			str = emojis[a.i][b.i] + str;
+			const val = getVal(botStats.uptime[h] || 0);
+			sum += val.n;
+			str += emojis[last.i][val.i];
+			last = null;
 		}
 	}
+
+	for (let i = botStats.uptime.lastHour + 1; i < 24; i++) addHour(i);
+	for (let i = 0; i < botStats.uptime.lastHour; i++) addHour(i);
+
+	const val = { i: 0, n: botStats.uptime[botStats.uptime.lastHour] || 0 };
+	sum += val.n;
+	str += emojis[last.i][val.i];
 
 	return { prog: str, per: Math.round(sum / 8.64e3) / 100 };
 }
@@ -98,11 +96,9 @@ module.exports = new Command({
 		if (client.shard) {
 			const shards = await client.shard.fetchClientValues("guilds.cache");
 			for (const shard of shards) {
-				guilds = shard.guilds.cache.size;
-				shard.guilds.cache.forEach((guild) => (users += guild.memberCount));
-				shard.guilds.cache.forEach(
-					(guild) => (channels += guild.channels.cache.size)
-				);
+				guilds = shard.length;
+				shard.forEach((guild) => (users += guild.memberCount));
+				shard.forEach((guild) => (channels += guild.channels.length));
 			}
 		} else {
 			guilds = client.guilds.cache.size;

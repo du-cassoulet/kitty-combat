@@ -8,7 +8,7 @@ module.exports = new Event("ready", () => {
 		const hour = new Date().getHours();
 		const min = new Date().getMinutes();
 
-		if (botStats.uptime.last !== hour) {
+		if (botStats.uptime.lastHour !== hour) {
 			botStats.uptime[hour] = 1;
 			botStats.uptime.lastHour = hour;
 		} else if (botStats.uptime.lastMin !== min) {
