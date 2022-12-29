@@ -290,14 +290,14 @@ class Cat {
 		this.atk1 = new Attack()
 			.setName("PAW_HIT")
 			.setDescription("PAW_HIT_DESCRIPTION")
-			.setDmg(10, 20)
+			.setDmg(dev ? 100 : 10, dev ? 100 : 20)
 			.setCrit(5, 1.5)
 			.setStamina(5);
 
 		this.atk2 = new Attack()
 			.setName("PAW_HIT")
 			.setDescription("PAW_HIT_DESCRIPTION")
-			.setDmg(10, 20)
+			.setDmg(dev ? 100 : 10, dev ? 100 : 20)
 			.setCrit(5, 1.5)
 			.setStamina(5);
 
@@ -339,7 +339,7 @@ class Cat {
 			turn.absPer += turn.absPer / (100 / data.absPer);
 
 			if (data.dodge) turn.dodge = true;
-			if (data.critical) turn.critical = true;
+			if (data.critBoost) turn.critBoost = true;
 
 			return this.user.turns.set(num, turn);
 		} else {
@@ -361,8 +361,8 @@ class Cat {
 		);
 
 		const heal = randInt(
-			typeof atk.dmg.min === "function" ? atk.heal.min() : atk.heal.min,
-			typeof atk.dmg.max === "function" ? atk.heal.min() : atk.heal.max
+			typeof atk.heal.min === "function" ? atk.heal.min() : atk.heal.min,
+			typeof atk.heal.max === "function" ? atk.heal.min() : atk.heal.max
 		);
 
 		if (critical) dmg *= atk.crit.mul;

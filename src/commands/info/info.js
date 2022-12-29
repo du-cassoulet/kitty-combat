@@ -83,7 +83,7 @@ function getUptime(botStats) {
 	sum += val.n;
 	str += emojis[last.i][val.i];
 
-	return { prog: str, per: Math.round(sum / 8.64e3) / 100 };
+	return { prog: str, per: Math.round((sum / 1440) * 10000) / 100 };
 }
 
 module.exports = new Command({

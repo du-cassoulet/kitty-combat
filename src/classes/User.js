@@ -297,6 +297,7 @@ class User {
 			.setJoinedAt(data.joinedAt)
 			.setElo(data.elo)
 			.setHist(data.hist)
+			.setUsages(data.usages)
 			.setInv(Inventory.form(data.inv))
 			.setStats(Stats.form(data.stats))
 			.setLeveling(Leveling.form(data.leveling));

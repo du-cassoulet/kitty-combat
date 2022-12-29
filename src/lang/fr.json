@@ -326,5 +326,6 @@
   "VERSION": "Version %s",
   "SUPPORT_SERVER": "Serveur officiel",
   "PLAY_BOT": "Jouer contre un robot",
-  "NO_STATS": "Votre adversaire ne recevra aucune progression car il s'agit d'un bot."
+  "NO_STATS": "Votre adversaire ne recevra aucune progression car il s'agit d'un bot.",
+  "REPLAY_GAME": "Replay"
 }

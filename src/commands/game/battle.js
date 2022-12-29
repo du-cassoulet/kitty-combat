@@ -13,6 +13,7 @@ const addExp = require("../../functions/addExp");
 const EloRank = require("elo-rank");
 const getRank = require("../../functions/getRank");
 const humanizeDuration = require("humanize-duration");
+const rarities = require("../../storage/json/rarities.json");
 
 const elo = new EloRank(15);
 const START_TIME = dev ? 1000 : 10000;
@@ -59,8 +60,8 @@ module.exports = new Command({
 	execute: async function (slash, translate) {
 		function ns(n) {
 			return n >= 0
-				? "+" + Math.floor(n).toLocaleString(slash.locale)
-				: Math.floor(n).toLocaleString(slash.locale);
+				? "+" + Math.floor(n + 0).toLocaleString(slash.locale)
+				: Math.floor(n + 0).toLocaleString(slash.locale);
 		}
 
 		const inGame = client.inGame.get(slash.user.id);
@@ -115,7 +116,7 @@ module.exports = new Command({
 		const replayButton = new Discord.ButtonBuilder()
 			.setCustomId("replay")
 			.setEmoji("🔄")
-			.setStyle(Discord.ButtonStyle.Secondary)
+			.setStyle(Discord.ButtonStyle.Primary)
 			.setLabel(translate("PLAY_AGAIN"));
 
 		const game = new Game();
@@ -562,6 +563,7 @@ module.exports = new Command({
 			let turn = 0;
 			let end = false;
 			let hostTurn = true;
+			const steps = [];
 			const cat = () => (hostTurn ? cat1 : cat2);
 
 			cat1.setUser(player1.game).setOpponent(player2.game);
@@ -628,18 +630,40 @@ module.exports = new Command({
 			 * absPer:number,
 			 * boost:boolean,
 			 * dodged:boolean,
-			 * critical:boolean
+			 * critical:boolean,
+			 * cat1:Cat,
+			 * cat2:Cat,
+			 * turn:number,
+			 * hostTurn:boolean
 			 * }} act
+			 * @param {boolean} replayMode
 			 */
-			async function embed(showTurn, act = {}) {
+			async function embed(showTurn, act = {}, replayMode = false) {
+				const currentCat = !showTurn
+					? cat()
+					: act.hostTurn
+					? act.cat1
+					: act.cat2;
+
+				const curCat1 = showTurn ? act.cat1 : cat1;
+				const curCat2 = showTurn ? act.cat2 : cat2;
+				const curTurn = showTurn ? act.turn : turn;
+
+				const userCat1 = player1.data.inv.cats.find((c) => c.catId === cat1.id);
+				const userCat2 =
+					player2.data?.inv?.cats?.find((c) => c.catId === cat2.id) ||
+					new User.Cat().setName(null);
+
 				return new Discord.EmbedBuilder()
-					.setColor(getColor(cat().imageData).hex)
-					.setThumbnail(`attachment://${cat().id}.png`)
+					.setColor(getColor(currentCat.imageData).hex)
+					.setThumbnail(`attachment://${currentCat.id}.png`)
 					.setTitle(
-						translate("VS", player1.user.username, player2.user.username)
+						(replayMode ? "🎥 " : "") +
+							translate("VS", player1.user.username, player2.user.username) +
+							(replayMode ? " " + `(${translate("REPLAY_GAME")})` : "")
 					)
 					.setFooter({
-						text: translate("TURN", (turn + 1).toLocaleString(slash.locale)),
+						text: translate("TURN", (curTurn + 1).toLocaleString(slash.locale)),
 					})
 					.setFields(
 						{
@@ -647,10 +671,18 @@ module.exports = new Command({
 								(hostTurn ? "<:arrowwhiteright:1054004554464768012> " : "") +
 								player1.user.tag,
 							value:
+								rarities[cat1.rarity].emoji +
+								" " +
+								(userCat1.name
+									? `**${userCat1.name}** (${translate(cat1.name)})`
+									: `**${translate(cat1.name)}**`) +
+								"\n" +
+								"<:line:930824483474915339>".repeat(3) +
+								"\n" +
 								"❤️ " +
 								translate(
 									"HEALTH",
-									cat1.user.health.toLocaleString(slash.locale)
+									curCat1.user.health.toLocaleString(slash.locale)
 								) +
 								(!showTurn
 									? ""
@@ -670,19 +702,31 @@ module.exports = new Command({
 								"\n☄️ " +
 								translate(
 									"STAMINA",
-									cat1.user.stamina.toLocaleString(slash.locale)
+									curCat1.user.stamina.toLocaleString(slash.locale)
 								) +
 								(!showTurn ? "" : hostTurn ? " *" + ns(act.stamina) + "*" : ""),
+							inline: true,
 						},
 						{
 							name:
-								(hostTurn ? "" : "<:arrowwhiteright:1054004554464768012> ") +
+								(hostTurn
+									? "<:N_:718506491660992735>"
+									: "<:N_:718506491660992735><:arrowwhiteright:1054004554464768012> ") +
 								player2.user.tag,
 							value:
+								"> " +
+								rarities[cat2.rarity].emoji +
+								" " +
+								(userCat2.name
+									? `**${userCat2.name}** (${translate(cat2.name)})`
+									: `**${translate(cat2.name)}**`) +
+								"\n> " +
+								"<:line:930824483474915339>".repeat(3) +
+								"\n> " +
 								"❤️ " +
 								translate(
 									"HEALTH",
-									cat2.user.health.toLocaleString(slash.locale)
+									curCat2.user.health.toLocaleString(slash.locale)
 								) +
 								(!showTurn
 									? ""
@@ -699,12 +743,13 @@ module.exports = new Command({
 									  "*" +
 									  (act.boost ? " " + translate("BOOST") : "")
 									: "") +
-								"\n☄️ " +
+								"\n> ☄️ " +
 								translate(
 									"STAMINA",
-									cat2.user.stamina.toLocaleString(slash.locale)
+									curCat2.user.stamina.toLocaleString(slash.locale)
 								) +
 								(!showTurn ? "" : hostTurn ? "" : " *" + ns(act.stamina) + "*"),
+							inline: true,
 						}
 					);
 			}
@@ -727,6 +772,7 @@ module.exports = new Command({
 
 			const collector = botMessage.createMessageComponentCollector({
 				time: 1.2e5,
+				filter: (i) => i.isButton(),
 			});
 
 			/**
@@ -779,7 +825,6 @@ module.exports = new Command({
 			 */
 			async function endGame(winner, loser, reason = null) {
 				end = true;
-				game.delete();
 				collector.stop();
 
 				const endTime = Date.now();
@@ -883,10 +928,22 @@ module.exports = new Command({
 				}
 
 				if (slash.isRepliable()) {
-					await slash.editReply({
-						components: [
-							new Discord.ActionRowBuilder().setComponents(replayButton),
-						],
+					function components(disabled) {
+						return [
+							new Discord.ActionRowBuilder().setComponents(
+								replayButton,
+								new Discord.ButtonBuilder()
+									.setCustomId("replay-game")
+									.setLabel(translate("REPLAY_GAME"))
+									.setEmoji("🎥")
+									.setStyle(Discord.ButtonStyle.Secondary)
+									.setDisabled(disabled)
+							),
+						];
+					}
+
+					const botMessage = await slash.editReply({
+						components: components(false),
 						embeds: [
 							new Discord.EmbedBuilder()
 								.setColor(
@@ -912,7 +969,7 @@ module.exports = new Command({
 										: "") +
 										translate(
 											"GAME_TURNS_TIME",
-											`**${turn.toLocaleString(slash.locale)}**`,
+											`**${(turn + 1).toLocaleString(slash.locale)}**`,
 											`**${humanizeDuration(endTime - start, {
 												language: slash.locale.split("-")[0],
 												round: true,
@@ -937,18 +994,14 @@ module.exports = new Command({
 															slash.locale
 														)}** / ${allUsers.length.toLocaleString(
 															slash.locale
-														)} *(+${(
-															winner.data.stats.rank - winnerRank
-														).toLocaleString(slash.locale)})*`
+														)} *(${ns(winner.data.stats.rank - winnerRank)})*`
 												  ) +
 												  "\n" +
 												  `${
 														getRank(winner.data.elo).emoji
 												  } ${winner.data.elo.toLocaleString(
 														slash.locale
-												  )} Elo *(+${(
-														winner.data.elo - oldWinElo
-												  ).toLocaleString(slash.locale)})*` +
+												  )} Elo *(${ns(winner.data.elo - oldWinElo)})*` +
 												  "\n" +
 												  `${icons.coin} +${winCoins.toLocaleString(
 														slash.locale
@@ -982,18 +1035,14 @@ module.exports = new Command({
 															slash.locale
 														)}** / ${allUsers.length.toLocaleString(
 															slash.locale
-														)} *(-${(
-															loserRank - loser.data.stats.rank
-														).toLocaleString(slash.locale)}*)`
+														)} *(${ns(loserRank - loser.data.stats.rank)}*)`
 												  ) +
 												  "\n> " +
 												  `${
 														getRank(loser.data.elo).emoji
 												  } ${loser.data.elo.toLocaleString(
 														slash.locale
-												  )} Elo *(-${(
-														oldLosElo - loser.data.elo
-												  ).toLocaleString(slash.locale)})*` +
+												  )} Elo *(${ns(oldLosElo - loser.data.elo)})*` +
 												  "\n> " +
 												  `${icons.coin} +${losCoins.toLocaleString(
 														slash.locale
@@ -1011,6 +1060,130 @@ module.exports = new Command({
 								),
 						],
 						files: [],
+					});
+
+					const collector = botMessage.createMessageComponentCollector({
+						time: 6e4,
+						filter: (i) => i.isButton(),
+					});
+
+					let page = 0;
+					function turnSelect(disabled) {
+						return [
+							new Discord.ActionRowBuilder().setComponents(
+								new Discord.ButtonBuilder()
+									.setCustomId("previous")
+									.setEmoji("1054004556067000350")
+									.setStyle(Discord.ButtonStyle.Primary)
+									.setDisabled(disabled || page <= 0),
+								new Discord.ButtonBuilder()
+									.setCustomId("page")
+									.setLabel(`${page + 1}/${steps.length}`)
+									.setStyle(Discord.ButtonStyle.Secondary)
+									.setDisabled(disabled),
+								new Discord.ButtonBuilder()
+									.setCustomId("next")
+									.setEmoji("1054004554464768012")
+									.setStyle(Discord.ButtonStyle.Primary)
+									.setDisabled(disabled || page >= steps.length - 1)
+							),
+						];
+					}
+
+					collector.on("collect", async (button1) => {
+						collector.resetTimer();
+						switch (button1.customId) {
+							case "replay-game": {
+								const curCat = steps[page].hostTurn
+									? steps[page].cat1
+									: steps[page].cat2;
+
+								const botMessage = await button1.reply({
+									embeds: [await embed(true, steps[page], true)],
+									components: turnSelect(false),
+									files: [
+										new Discord.AttachmentBuilder()
+											.setFile(
+												path.join(
+													__dirname,
+													"../../assets/images/cats",
+													curCat.image
+												)
+											)
+											.setName(curCat.id + ".png"),
+									],
+								});
+
+								const collector = botMessage.createMessageComponentCollector({
+									time: 6e4,
+									filter: (i) => i.isButton(),
+								});
+
+								collector.on("collect", async (button2) => {
+									switch (button2.customId) {
+										case "previous": {
+											if (page > 0) page--;
+											break;
+										}
+
+										case "next": {
+											if (page < steps.length - 1) page++;
+											break;
+										}
+
+										case "page": {
+											return button2.reply({
+												content:
+													"<a:fabulouscat:1053043411634094230> " +
+													translate("PAGE_INDICATOR"),
+												ephemeral: true,
+											});
+										}
+									}
+
+									collector.resetTimer();
+									button2.deferUpdate();
+
+									const curCat = steps[page].hostTurn
+										? steps[page].cat1
+										: steps[page].cat2;
+
+									button1.editReply({
+										embeds: [await embed(true, steps[page], true)],
+										components: turnSelect(false),
+										files: [
+											new Discord.AttachmentBuilder()
+												.setFile(
+													path.join(
+														__dirname,
+														"../../assets/images/cats",
+														curCat.image
+													)
+												)
+												.setName(curCat.id + ".png"),
+										],
+									});
+								});
+
+								collector.on("end", () => {
+									if (button1.isRepliable()) {
+										button1.editReply({
+											components: turnSelect(true),
+										});
+									}
+								});
+
+								break;
+							}
+						}
+					});
+
+					collector.on("end", () => {
+						if (slash.isRepliable()) {
+							slash.editReply({
+								components: components(true),
+							});
+						}
 					});
 				}
 
@@ -1122,6 +1295,21 @@ module.exports = new Command({
 					hostTurn ? player2 : player1,
 				];
 
+				steps.push({
+					absPer,
+					boost,
+					critical,
+					dmg,
+					dodged,
+					heal,
+					protDmg,
+					stamina,
+					cat1: structuredClone(cat1),
+					cat2: structuredClone(cat2),
+					hostTurn,
+					turn,
+				});
+
 				await slash.editReply({
 					components: components(true),
 					embeds: [
@@ -1134,20 +1322,24 @@ module.exports = new Command({
 							heal,
 							protDmg,
 							stamina,
+							cat1,
+							cat2,
+							hostTurn,
+							turn,
 						}),
 					],
 				});
 
+				hostTurn = !hostTurn;
+				if (hostTurn) turn++;
+
 				return setTimeout(async () => {
 					if (end) return;
-					const loser = playerOrder.find((p) => p.game.health <= 0);
+					const loser = playerOrder.find((p) => p.game.health < 1);
 					if (loser) {
 						const winner = playerOrder.find((p) => loser.user.id !== p.user.id);
 						return await endGame(winner, loser);
 					} else {
-						hostTurn = !hostTurn;
-						if (hostTurn) turn++;
-
 						await slash.editReply({
 							components: components(false),
 							embeds: [await embed(false)],
@@ -1205,6 +1397,21 @@ module.exports = new Command({
 									stamina = defence.def.stamina;
 								}
 
+								steps.push({
+									absPer,
+									boost,
+									critical,
+									dmg,
+									dodged,
+									heal,
+									protDmg,
+									stamina,
+									cat1: structuredClone(cat1),
+									cat2: structuredClone(cat2),
+									hostTurn,
+									turn,
+								});
+
 								await slash.editReply({
 									components: components(true),
 									embeds: [
@@ -1217,32 +1424,41 @@ module.exports = new Command({
 											heal,
 											protDmg,
 											stamina,
+											cat1,
+											cat2,
+											hostTurn,
+											turn,
 										}),
 									],
 								});
 
-								setTimeout(async () => {
+								return setTimeout(async () => {
 									if (end) return;
-									hostTurn = !hostTurn;
-									return await slash.editReply({
-										components: components(false),
-										embeds: [await embed(false)],
-										files: files(),
-									});
+									const loser = playerOrder.find((p) => p.game.health < 1);
+									if (loser) {
+										const winner = playerOrder.find(
+											(p) => loser.user.id !== p.user.id
+										);
+										return await endGame(winner, loser);
+									} else {
+										hostTurn = !hostTurn;
+										if (hostTurn) turn++;
+
+										return await slash.editReply({
+											components: components(false),
+											embeds: [await embed(false)],
+											files: files(),
+										});
+									}
 								}, 2000);
 							}, Math.floor(Math.random() * 2000) + 2000);
-						} else {
-							return await slash.editReply({
-								components: components(false),
-								embeds: [await embed(false)],
-								files: files(),
-							});
 						}
 					}
 				}, 2000);
 			});
 
 			collector.on("end", async () => {
+				game.delete();
 				client.removeListener("stopGame", stopGame);
 
 				if (!end) {
