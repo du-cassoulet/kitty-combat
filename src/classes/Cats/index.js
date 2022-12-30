@@ -21,3 +21,4 @@ module.exports.ToxicCat = require("./ToxicCat");
 module.exports.CyberCat = require("./CyberCat");
 module.exports.AlienCat = require("./AlienCat");
 module.exports.CowboyCat = require("./CowboyCat");
+module.exports.AlcoholicCat = require("./AlcoholicCat");

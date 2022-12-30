@@ -10,7 +10,7 @@ module.exports = new Event("ready", async () => {
 	}
 
 	const commands = [];
-
+	const guilds = {};
 	client.commands.toJSON().forEach((c) => {
 		function translateOptions(options) {
 			for (const option of options) {
@@ -54,7 +54,7 @@ module.exports = new Event("ready", async () => {
 		translateOptions([c.options || []]);
 		if (c.options.type) {
 			for (let i = 0; i < c.options.type.length; i++) {
-				commands.push({
+				const commandData = {
 					...c.options,
 					type: c.options.type[i],
 					options:
@@ -69,12 +69,36 @@ module.exports = new Event("ready", async () => {
 						c.options.type[i] === Discord.ApplicationCommandType.ChatInput
 							? c.options.descriptionLocalizations
 							: undefined,
-				});
+				};
+
+				if (c.options.guildId && !dev) {
+					if (guilds[c.options.guildId]) {
+						guilds[c.options.guildId].push(commandData);
+					} else {
+						guilds[c.options.guildId] = [commandData];
+					}
+				} else {
+					commands.push(commandData);
+				}
 			}
 		} else {
-			commands.push(c.options);
+			if (c.options.guildId && !dev) {
+				if (guilds[c.options.guildId]) {
+					guilds[c.options.guildId].push(c.options);
+				} else {
+					guilds[c.options.guildId] = [c.options];
+				}
+			} else {
+				commands.push(c.options);
+			}
 		}
 	});
 
-	target?.commands.set(commands);
+	target?.commands?.set(commands);
+	Object.entries(guilds).map(([guildId, commands]) => {
+		const guild = client.guilds.cache.get(guildId);
+		if (!guild) return;
+
+		guild.commands.set(commands);
+	});
 });

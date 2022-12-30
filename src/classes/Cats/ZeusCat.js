@@ -44,7 +44,7 @@ class ZeusCat extends Cat {
 				(this.user?.health || 100) - (this.opponent?.health || 100),
 				(this.user?.health || 100) - (this.opponent?.health || 100)
 			)
-			.setStamina(() => 50 - (this.user?.stamina || 100))
+			.setStamina(50)
 			.setUsages(1);
 	}
 }

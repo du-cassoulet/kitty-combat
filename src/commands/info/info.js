@@ -138,10 +138,10 @@ module.exports = new Command({
 					"\n" +
 					translate(
 						"CREATED_BY",
-						slash.guild.members.cache.get(owner.id)?.user?.toString() ||
+						slash.guild.members.cache.get(owner?.id)?.user?.toString() ||
 							(owner
 								? `[${owner.tag}](https://discord.com/users/${owner.id})`
-								: "DU CASSOULET")
+								: "**DU CASSOULET**")
 					) +
 					"\n" +
 					translate(

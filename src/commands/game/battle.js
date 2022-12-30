@@ -271,7 +271,7 @@ module.exports = new Command({
 				cat1 = new Cat();
 			} else if (player2?.user?.id === user.id) {
 				player2.data = data;
-				const Cat = Cats[player1.data.inv.selectedCat];
+				const Cat = Cats[player2.data.inv.selectedCat];
 				cat2 = new Cat();
 			} else return;
 
@@ -648,6 +648,7 @@ module.exports = new Command({
 				const curCat1 = showTurn ? act.cat1 : cat1;
 				const curCat2 = showTurn ? act.cat2 : cat2;
 				const curTurn = showTurn ? act.turn : turn;
+				const curHostTurn = showTurn ? act.hostTurn : hostTurn;
 
 				const userCat1 = player1.data.inv.cats.find((c) => c.catId === cat1.id);
 				const userCat2 =
@@ -668,7 +669,7 @@ module.exports = new Command({
 					.setFields(
 						{
 							name:
-								(hostTurn ? "<:arrowwhiteright:1054004554464768012> " : "") +
+								(curHostTurn ? "<:arrowwhiteright:1054004554464768012> " : "") +
 								player1.user.tag,
 							value:
 								rarities[cat1.rarity].emoji +
@@ -686,7 +687,7 @@ module.exports = new Command({
 								) +
 								(!showTurn
 									? ""
-									: hostTurn
+									: curHostTurn
 									? act.heal !== 0
 										? " *" +
 										  ns(act.heal) +
@@ -704,12 +705,16 @@ module.exports = new Command({
 									"STAMINA",
 									curCat1.user.stamina.toLocaleString(slash.locale)
 								) +
-								(!showTurn ? "" : hostTurn ? " *" + ns(act.stamina) + "*" : ""),
+								(!showTurn
+									? ""
+									: curHostTurn
+									? " *" + ns(act.stamina) + "*"
+									: ""),
 							inline: true,
 						},
 						{
 							name:
-								(hostTurn
+								(curHostTurn
 									? "<:N_:718506491660992735>"
 									: "<:N_:718506491660992735><:arrowwhiteright:1054004554464768012> ") +
 								player2.user.tag,
@@ -730,7 +735,7 @@ module.exports = new Command({
 								) +
 								(!showTurn
 									? ""
-									: hostTurn
+									: curHostTurn
 									? act.dmg !== 0
 										? " *" +
 										  ns(act.dmg) +
@@ -748,7 +753,11 @@ module.exports = new Command({
 									"STAMINA",
 									curCat2.user.stamina.toLocaleString(slash.locale)
 								) +
-								(!showTurn ? "" : hostTurn ? "" : " *" + ns(act.stamina) + "*"),
+								(!showTurn
+									? ""
+									: curHostTurn
+									? ""
+									: " *" + ns(act.stamina) + "*"),
 							inline: true,
 						}
 					);
@@ -1042,7 +1051,7 @@ module.exports = new Command({
 														getRank(loser.data.elo).emoji
 												  } ${loser.data.elo.toLocaleString(
 														slash.locale
-												  )} Elo *(${ns(oldLosElo - loser.data.elo)})*` +
+												  )} Elo *(${ns(loser.data.elo - oldLosElo)})*` +
 												  "\n> " +
 												  `${icons.coin} +${losCoins.toLocaleString(
 														slash.locale
@@ -1101,6 +1110,7 @@ module.exports = new Command({
 								const botMessage = await button1.reply({
 									embeds: [await embed(true, steps[page], true)],
 									components: turnSelect(false),
+									ephemeral: true,
 									files: [
 										new Discord.AttachmentBuilder()
 											.setFile(
@@ -1304,8 +1314,8 @@ module.exports = new Command({
 					heal,
 					protDmg,
 					stamina,
-					cat1: structuredClone(cat1),
-					cat2: structuredClone(cat2),
+					cat1: { ...cat1, user: { ...cat1.user } },
+					cat2: { ...cat2, user: { ...cat2.user } },
 					hostTurn,
 					turn,
 				});
@@ -1406,8 +1416,8 @@ module.exports = new Command({
 									heal,
 									protDmg,
 									stamina,
-									cat1: structuredClone(cat1),
-									cat2: structuredClone(cat2),
+									cat1: { ...cat1, user: { ...cat1.user } },
+									cat2: { ...cat2, user: { ...cat2.user } },
 									hostTurn,
 									turn,
 								});

@@ -122,7 +122,7 @@ class Game {
 	 */
 	delete() {
 		this.players.forEach((player) => {
-			client.inGame.delete(player.user.id);
+			this.removePlayer(player.user.id);
 		});
 
 		return client.games.delete(this.hostId);

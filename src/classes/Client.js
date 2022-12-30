@@ -14,7 +14,12 @@ class Client extends Discord.Client {
 			Discord.IntentsBitField.Flags.GuildVoiceStates,
 		];
 
-		super({ intents });
+		super({
+			intents,
+			allowedMentions: {
+				parse: [],
+			},
+		});
 
 		/** @type {Discord.Collection<string,Command>} */
 		this.commands = new Discord.Collection();

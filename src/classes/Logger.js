@@ -144,6 +144,35 @@ class Logger {
 			}
 		}
 	}
+
+	/**
+	 * @param  {...string|number} args
+	 */
+	ws(...args) {
+		for (const arg of args) {
+			if (["number", "string"].includes(typeof arg)) {
+				console.log(
+					(dev
+						? Logger.Markup.BgYellow +
+						  Logger.Markup.FgBlack +
+						  "[DEV]" +
+						  Logger.Markup.Reset +
+						  " "
+						: "") +
+						Logger.Markup.BgGray +
+						Logger.Markup.FgBlack +
+						"[WEBSOCKET]" +
+						Logger.Markup.Reset +
+						Logger.Markup.FgGray +
+						" " +
+						arg +
+						Logger.Markup.Reset
+				);
+			} else {
+				console.log(arg);
+			}
+		}
+	}
 }
 
 module.exports = Logger;

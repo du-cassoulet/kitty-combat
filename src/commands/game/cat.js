@@ -40,7 +40,7 @@ module.exports = new Command({
 				options: [
 					{
 						name: "CAT",
-						description: "CHOOSEN_CAT",
+						description: "RENAME_CAT",
 						type: Discord.ApplicationCommandOptionType.String,
 						required: true,
 						autocomplete: true,
@@ -83,41 +83,75 @@ module.exports = new Command({
 					},
 				],
 			},
+			{
+				name: "TRADE",
+				description: "TRADE_DESCRIPTION",
+				type: Discord.ApplicationCommandOptionType.Subcommand,
+				options: [
+					{
+						name: "CAT",
+						description: "TRADE_CAT",
+						type: Discord.ApplicationCommandOptionType.String,
+						required: true,
+						autocomplete: true,
+					},
+					{
+						name: "CAT_WANT",
+						description: "CAT_WANT_DESCRIPTION",
+						type: Discord.ApplicationCommandOptionType.String,
+						required: true,
+						autocomplete: true,
+					},
+				],
+			},
 		],
 	},
 	category: Command.Categories.Game,
 	autocomplete: async function (slash, translate) {
-		const query = slash.options.getFocused();
-		const data = await getUser(slash.user);
-		const userCats = data.inv.cats;
-		let unnamedAmount = 0;
+		const query = slash.options.getFocused(true);
 
-		const allCats = userCats.map((c) => {
-			if (!c.name) unnamedAmount++;
-			const Cat = Cats[c.catId];
-			const type = translate(Cat.name);
+		if (query.name === "cat") {
+			const data = await getUser(slash.user);
+			const userCats = data.inv.cats;
 
-			return {
-				name:
-					c.name ||
-					translate("UNNAMED_CAT") +
-						" " +
-						unnamedAmount.toLocaleString(slash.locale) +
-						` - (${type})`,
-				catId: c.catId,
-				type: type,
-			};
-		});
+			let unnamedAmount = 0;
+			const allCats = userCats.map((c) => {
+				if (!c.name) unnamedAmount++;
+				const Cat = Cats[c.catId];
+				const type = translate(Cat.name);
 
-		const filtered = allCats.filter(
-			(c) =>
-				clean(c.name).startsWith(clean(query)) ||
-				clean(c.type).startsWith(clean(query))
-		);
+				return {
+					name:
+						c.name ||
+						translate("UNNAMED_CAT") +
+							" " +
+							unnamedAmount.toLocaleString(slash.locale) +
+							` - (${type})`,
+					catId: c.catId,
+					type: type,
+				};
+			});
 
-		return slash.respond(
-			filtered.map((c) => ({ name: c.name, value: c.catId })).slice(0, 25)
-		);
+			const filtered = allCats.filter(
+				(c) =>
+					clean(c.name).startsWith(clean(query.value)) ||
+					clean(c.type).startsWith(clean(query.value))
+			);
+
+			return slash.respond(
+				filtered.map((c) => ({ name: c.name, value: c.catId })).slice(0, 25)
+			);
+		} else if (query.name === "wanted-cat") {
+			const filtered = Object.values(Cats).filter((c) =>
+				clean(translate(c.name)).startsWith(clean(query.value))
+			);
+
+			return slash.respond(
+				filtered
+					.map((c) => ({ name: translate(c.name), value: c.id }))
+					.slice(0, 25)
+			);
+		}
 	},
 	execute: async function (slash, translate) {
 		const action = slash.action || slash.options.getSubcommand();
@@ -366,7 +400,8 @@ module.exports = new Command({
 				const data = await getUser(slash.user);
 				const userCats = data.inv.cats;
 
-				if (!Cats[catId]) {
+				const Cat = Cats[catId];
+				if (!Cat) {
 					return slash.reply({
 						content: icons.error + translate("CAT_DONT_EXIST", `**${catId}**`),
 						ephemeral: true,
@@ -376,7 +411,9 @@ module.exports = new Command({
 				const cat = userCats.find((c) => c.catId === catId);
 				if (!cat) {
 					return slash.reply({
-						content: icons.error + translate("DONT_OWN_CAT", `**${catId}**`),
+						content:
+							icons.error +
+							translate("DONT_OWN_CAT", `**${translate(Cat.name)}**`),
 						ephemeral: true,
 					});
 				}
@@ -757,7 +794,9 @@ module.exports = new Command({
 				const cat = data.inv.cats.find((c) => c.catId === catId);
 				if (!cat) {
 					return slash.reply({
-						content: icons.error + translate("DONT_OWN_CAT", `**${catId}**`),
+						content:
+							icons.error +
+							translate("DONT_OWN_CAT", `**${translate(Cat.name)}**`),
 						ephemeral: true,
 					});
 				}
@@ -779,6 +818,189 @@ module.exports = new Command({
 							  )
 							: translate("SELECTED_CAT", `**${translate(Cat.name)}**`)),
 				});
+			}
+
+			case "trade": {
+				const userCatId = slash.options.getString("cat");
+				const wantCatId = slash.options.getString("wanted-cat");
+				const data = await getUser(slash.user);
+
+				const userCat = Cats[userCatId];
+				const wantCat = Cats[wantCatId];
+
+				if (!userCat) {
+					return slash.reply({
+						content:
+							icons.error + translate("CAT_DONT_EXIST", `**${userCatId}**`),
+						ephemeral: true,
+					});
+				}
+
+				if (!wantCat) {
+					return slash.reply({
+						content:
+							icons.error + translate("CAT_DONT_EXIST", `**${wantCatId}**`),
+						ephemeral: true,
+					});
+				}
+
+				if (userCatId === wantCatId) {
+					return slash.reply({
+						content:
+							icons.error +
+							translate(
+								"SAME_CAT",
+								`**${translate(userCat.name)}**`,
+								`**${translate(wantCat.name)}**`
+							),
+						ephemeral: true,
+					});
+				}
+
+				if (data.inv.cats.find((c) => c.catId === wantCatId)) {
+					return slash.reply({
+						content: icons.error + translate("ALREADY_OWN_CAT"),
+						ephemeral: true,
+					});
+				}
+
+				const catIdx = data.inv.cats.findIndex((c) => c.catId === userCatId);
+				if (catIdx === -1) {
+					return slash.reply({
+						content:
+							icons.error +
+							translate("DONT_OWN_CAT", `**${translate(userCat.name)}**`),
+						ephemeral: true,
+					});
+				}
+
+				function tradeRow(disabled) {
+					return [
+						new Discord.ActionRowBuilder().setComponents(
+							new Discord.ButtonBuilder()
+								.setCustomId("make-trade")
+								.setLabel(translate("MAKE_TRADE"))
+								.setStyle(Discord.ButtonStyle.Primary)
+								.setEmoji("🔀")
+								.setDisabled(disabled)
+						),
+					];
+				}
+
+				const botMessage = await slash.reply({
+					embeds: [
+						new Discord.EmbedBuilder()
+							.setColor(
+								getColor(
+									await Canvas.loadImage(
+										path.join(
+											__dirname,
+											"../../assets/images/cats",
+											userCat.image
+										)
+									)
+								).hex
+							)
+							.setThumbnail("attachment://" + userCatId + ".png")
+							.setDescription(
+								translate(
+									"WANT_TRADE",
+									slash.user.toString(),
+									data.inv.cats[catIdx].name
+										? `**${data.inv.cats[catIdx].name}** (${translate(
+												userCat.name
+										  )})`
+										: `**${translate(userCat.name)}**`,
+									`**${translate(wantCat.name)}**`
+								) +
+									"\n\n" +
+									translate("CLICK_BUTTON", slash.user.username) +
+									"\n\n" +
+									translate("LVL_1_TRADE")
+							)
+							.setFooter({ text: translate("NEED_CAT_TRADE") })
+							.setTitle("🤝 " + translate("TRADE_OFFER")),
+					],
+					files: [
+						new Discord.AttachmentBuilder()
+							.setFile(
+								path.join(__dirname, "../../assets/images/cats", userCat.image)
+							)
+							.setName(userCatId + ".png"),
+					],
+					components: tradeRow(false),
+				});
+
+				const collector = botMessage.createMessageComponentCollector({
+					time: 1.8e5,
+					filter: (i) => i.isButton(),
+				});
+
+				collector.on("collect", async (button) => {
+					if (button.customId !== "make-trade") return;
+
+					if (button.user.id === slash.user.id) {
+						return button.reply({
+							content: icons.error + translate("YOU_MADE_TRADE"),
+							ephemeral: true,
+						});
+					}
+
+					const tradeData = await getUser(button.user);
+					const tradeCatIdx = tradeData.inv.cats.findIndex(
+						(c) => c.catId === wantCatId
+					);
+
+					if (tradeCatIdx === -1) {
+						return button.reply({
+							content:
+								icons.error +
+								translate("DONT_OWN_CAT", `**${translate(wantCat.name)}**`),
+							ephemeral: true,
+						});
+					}
+
+					if (tradeData.inv.cats.find((c) => c.catId === userCatId)) {
+						return button.reply({
+							content: icons.error + translate("ALREADY_OWN_CAT"),
+							ephemeral: true,
+						});
+					}
+
+					tradeData.inv.cats.splice(tradeCatIdx, 1);
+					data.inv.cats.splice(catIdx, 1);
+
+					tradeData.inv.cats.push(
+						new User.Cat()
+							.setName(null)
+							.setCatId(userCatId)
+							.setSouls(1)
+							.setDamages(0, 0)
+							.setDefence(0, 0)
+					);
+
+					data.inv.cats.push(
+						new User.Cat()
+							.setName(null)
+							.setCatId(wantCatId)
+							.setSouls(1)
+							.setDamages(0, 0)
+							.setDefence(0, 0)
+					);
+
+					await users.set(`${slash.user.id}.inv.cats`, data.inv.cats);
+					await users.set(`${button.user.id}.inv.cats`, tradeData.inv.cats);
+
+					button.reply({
+						content: icons.success + translate("TRADE_SUCCESS"),
+					});
+				});
+
+				collector.on("end", () => {
+					slash.editReply({ components: tradeRow(true) });
+				});
+
+				break;
 			}
 		}
 	},
