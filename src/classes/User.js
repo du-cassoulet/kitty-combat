@@ -278,11 +278,31 @@ class Leveling {
 	}
 }
 
+class Cooldowns {
+	/**
+	 * @param {Cooldowns} data
+	 * @returns {Cooldowns}
+	 */
+	static form(data) {
+		return new Cooldowns().setWork(data?.work);
+	}
+
+	constructor() {
+		this.work = 0;
+	}
+
+	setWork(work) {
+		this.work = work ?? this.work;
+		return this;
+	}
+}
+
 class User {
 	static Inventory = Inventory;
 	static Stats = Stats;
 	static Leveling = Leveling;
 	static Cat = Cat;
+	static Cooldowns = Cooldowns;
 
 	/**
 	 * @param {User} data
@@ -300,7 +320,8 @@ class User {
 			.setUsages(data.usages)
 			.setInv(Inventory.form(data.inv))
 			.setStats(Stats.form(data.stats))
-			.setLeveling(Leveling.form(data.leveling));
+			.setLeveling(Leveling.form(data.leveling))
+			.setCooldowns(Cooldowns.form(data.cooldowns));
 	}
 
 	constructor() {
@@ -316,6 +337,7 @@ class User {
 		this.inv = new User.Inventory();
 		this.stats = new User.Stats();
 		this.leveling = new User.Leveling();
+		this.cooldowns = new User.Cooldowns();
 
 		/** @type {number[]} */
 		this.hist = [this.elo];
@@ -406,6 +428,15 @@ class User {
 		this.usages = usages ?? this.usages;
 		return this;
 	}
+
+	/**
+	 * @param {Cooldowns} cooldowns
+	 * @returns {User}
+	 */
+	setCooldowns(cooldowns) {
+		this.cooldowns = cooldowns ?? this.cooldowns;
+		return this;
+	}
 }
 
 module.exports = User;
@@ -413,3 +444,4 @@ module.exports.Inventory = Inventory;
 module.exports.Stats = Stats;
 module.exports.Leveling = Leveling;
 module.exports.Cat = Cat;
+module.exports.Cooldowns = Cooldowns;

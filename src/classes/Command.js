@@ -18,6 +18,39 @@ function ExecuteFunction(slash, translate) {}
  */
 function AutocompleteFunction(slash, translate) {}
 
+class Option {
+	/**
+	 * @param {{
+	 * name:keyof import("../lang/en.json"),
+	 * description:keyof import("../lang/en.json"),
+	 * required:boolean|undefined,
+	 * autocomplete:boolean|undefined,
+	 * type:number,
+	 * maxLength:number|undefined,
+	 * minLength:number|undefined,
+	 * maxValue:number|undefined,
+	 * minValue:number|undefined,
+	 * channelTypes:number[]|undefined,,
+	 * choices:{name:keyof import("../lang/en.json"),value:string}[]|undefined,
+	 * options:Option[]|undefined
+	 * }} data
+	 */
+	constructor(data) {
+		this.name = data.name;
+		this.description = data.description;
+		this.required = data.required;
+		this.autocomplete = data.autocomplete;
+		this.type = data.type;
+		this.maxLength = data.maxLength;
+		this.minLength = data.minLength;
+		this.maxValue = data.maxValue;
+		this.minValue = data.minValue;
+		this.channelTypes = data.channelTypes;
+		this.choices = data.choices;
+		this.options = data.options;
+	}
+}
+
 class Command {
 	static Categories = {
 		Info: {
@@ -40,7 +73,7 @@ class Command {
 
 	/**
 	 * @param {{
-	 * options:Discord.ApplicationCommandResolvable,
+	 * options:{name:keyof import("../lang/en.json"),description:keyof import("../lang/en.json"),type:number[],guildId:string|undefined,options:Option[]|undefined},
 	 * category:{name:string,description:string},
 	 * execute:ExecuteFunction,
 	 * autocomplete:AutocompleteFunction

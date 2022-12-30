@@ -8,6 +8,7 @@ const User = require("../../classes/User");
 const getUser = require("../../functions/getUser");
 const Cats = require("../../classes/Cats");
 const Cat = require("../../classes/Cat");
+const getCommand = require("../../functions/getCommand");
 
 function clean(s) {
 	return s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -882,6 +883,12 @@ module.exports = new Command({
 								.setLabel(translate("MAKE_TRADE"))
 								.setStyle(Discord.ButtonStyle.Primary)
 								.setEmoji("🔀")
+								.setDisabled(disabled),
+							new Discord.ButtonBuilder()
+								.setCustomId("cancel")
+								.setLabel(translate("CANCEL"))
+								.setStyle(Discord.ButtonStyle.Danger)
+								.setEmoji("1054713221883363399")
 								.setDisabled(disabled)
 						),
 					];
@@ -937,63 +944,86 @@ module.exports = new Command({
 				});
 
 				collector.on("collect", async (button) => {
-					if (button.customId !== "make-trade") return;
+					switch (button.customId) {
+						case "make-trade": {
+							if (button.user.id === slash.user.id) {
+								return button.reply({
+									content: icons.error + translate("YOU_MADE_TRADE"),
+									ephemeral: true,
+								});
+							}
 
-					if (button.user.id === slash.user.id) {
-						return button.reply({
-							content: icons.error + translate("YOU_MADE_TRADE"),
-							ephemeral: true,
-						});
+							const tradeData = await getUser(button.user);
+							if (!tradeData) {
+								return button.reply({
+									content:
+										"<:catpaw:1053011873093664839> " +
+										translate("START_TO_START", getCommand("start")),
+									ephemeral: true,
+								});
+							}
+
+							const tradeCatIdx = tradeData.inv.cats.findIndex(
+								(c) => c.catId === wantCatId
+							);
+
+							if (tradeCatIdx === -1) {
+								return button.reply({
+									content:
+										icons.error +
+										translate("DONT_OWN_CAT", `**${translate(wantCat.name)}**`),
+									ephemeral: true,
+								});
+							}
+
+							if (tradeData.inv.cats.find((c) => c.catId === userCatId)) {
+								return button.reply({
+									content: icons.error + translate("ALREADY_OWN_CAT"),
+									ephemeral: true,
+								});
+							}
+
+							tradeData.inv.cats.splice(tradeCatIdx, 1);
+							data.inv.cats.splice(catIdx, 1);
+
+							tradeData.inv.cats.push(
+								new User.Cat()
+									.setName(null)
+									.setCatId(userCatId)
+									.setSouls(1)
+									.setDamages(0, 0)
+									.setDefence(0, 0)
+							);
+
+							data.inv.cats.push(
+								new User.Cat()
+									.setName(null)
+									.setCatId(wantCatId)
+									.setSouls(1)
+									.setDamages(0, 0)
+									.setDefence(0, 0)
+							);
+
+							await users.set(`${slash.user.id}.inv.cats`, data.inv.cats);
+							await users.set(`${button.user.id}.inv.cats`, tradeData.inv.cats);
+
+							return button.reply({
+								content: icons.success + translate("TRADE_SUCCESS"),
+							});
+						}
+
+						case "cancel": {
+							if (button.user.id !== slash.user.id) {
+								return button.reply({
+									content: icons.error + translate("NOT_TRADE_AUTHOR"),
+									ephemeral: true,
+								});
+							}
+
+							collector.stop();
+							button.deferUpdate();
+						}
 					}
-
-					const tradeData = await getUser(button.user);
-					const tradeCatIdx = tradeData.inv.cats.findIndex(
-						(c) => c.catId === wantCatId
-					);
-
-					if (tradeCatIdx === -1) {
-						return button.reply({
-							content:
-								icons.error +
-								translate("DONT_OWN_CAT", `**${translate(wantCat.name)}**`),
-							ephemeral: true,
-						});
-					}
-
-					if (tradeData.inv.cats.find((c) => c.catId === userCatId)) {
-						return button.reply({
-							content: icons.error + translate("ALREADY_OWN_CAT"),
-							ephemeral: true,
-						});
-					}
-
-					tradeData.inv.cats.splice(tradeCatIdx, 1);
-					data.inv.cats.splice(catIdx, 1);
-
-					tradeData.inv.cats.push(
-						new User.Cat()
-							.setName(null)
-							.setCatId(userCatId)
-							.setSouls(1)
-							.setDamages(0, 0)
-							.setDefence(0, 0)
-					);
-
-					data.inv.cats.push(
-						new User.Cat()
-							.setName(null)
-							.setCatId(wantCatId)
-							.setSouls(1)
-							.setDamages(0, 0)
-							.setDefence(0, 0)
-					);
-
-					await users.set(`${slash.user.id}.inv.cats`, data.inv.cats);
-					await users.set(`${button.user.id}.inv.cats`, tradeData.inv.cats);
-
-					button.reply({
-						content: icons.success + translate("TRADE_SUCCESS"),
-					});
 				});
 
 				collector.on("end", () => {

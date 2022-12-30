@@ -344,5 +344,11 @@
 	"MAKE_TRADE": "Trade my cat",
 	"YOU_MADE_TRADE": "You are the author of this trade.",
 	"LVL_1_TRADE": "Both cats will return to level one after the trade.",
-	"TRADE_SUCCESS": "You have successfully swapped cats."
+	"TRADE_SUCCESS": "You have successfully swapped cats.",
+	"CANCEL": "Cancel",
+	"NOT_TRADE_AUTHOR": "You are not the author of this trade.",
+	"WORK": "work",
+	"WORK_MONEY": "Work to earn some coins.",
+	"ALREADY_WORKED": "You already worked not long ago, come back %s.",
+	"WORKED_HARD": "%s, you have worked hard enough for today, here is %s !"
 }
