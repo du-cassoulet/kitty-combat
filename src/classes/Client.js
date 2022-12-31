@@ -11,6 +11,7 @@ class Client extends Discord.Client {
 	constructor() {
 		const intents = [
 			Discord.IntentsBitField.Flags.Guilds,
+			Discord.IntentsBitField.Flags.GuildMembers,
 			Discord.IntentsBitField.Flags.GuildVoiceStates,
 		];
 

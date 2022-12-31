@@ -12,6 +12,7 @@
 		"dotenv": "^16.0.3",
 		"elo-rank": "^1.0.4",
 		"humanize-duration": "^3.27.3",
+		"openai": "^3.1.0",
 		"quick.db": "^9.0.8",
 		"util": "^0.12.5"
 	},

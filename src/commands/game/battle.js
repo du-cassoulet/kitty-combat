@@ -15,7 +15,7 @@ const getRank = require("../../functions/getRank");
 const humanizeDuration = require("humanize-duration");
 const rarities = require("../../storage/json/rarities.json");
 
-const elo = new EloRank(15);
+const elo = new EloRank(30);
 const START_TIME = dev ? 1000 : 10000;
 
 let speedIcon = null;
